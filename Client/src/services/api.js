@@ -181,7 +181,7 @@ export const bookingsAPI = {
 
   approve: async (id) => {
     try {
-      const response = await api.post(`/bookings/${id}/approve`);
+      const response = await api.put(`/bookings/${id}/approve`);
       return response.data;
     } catch (error) {
       console.error('Approve booking error:', error);
@@ -191,7 +191,7 @@ export const bookingsAPI = {
 
   reject: async (id, reason) => {
     try {
-      const response = await api.post(`/bookings/${id}/reject`, { reason });
+      const response = await api.put(`/bookings/${id}/reject`, { reason });
       return response.data;
     } catch (error) {
       console.error('Reject booking error:', error);
@@ -201,7 +201,7 @@ export const bookingsAPI = {
 
   cancel: async (id) => {
     try {
-      const response = await api.post(`/bookings/${id}/cancel`);
+      const response = await api.put(`/bookings/${id}/cancel`);
       return response.data;
     } catch (error) {
       console.error('Cancel booking error:', error);
