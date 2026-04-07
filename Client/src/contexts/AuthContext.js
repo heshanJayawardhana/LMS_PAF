@@ -1,0 +1,135 @@
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { authAPI } from '../services/mockApi';
+import toast from 'react-hot-toast';
+
+const AuthContext = createContext();
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const userData = localStorage.getItem('user');
+    
+    if (token && userData) {
+      setUser(JSON.parse(userData));
+    }
+    setLoading(false);
+  }, []);
+
+  const login = async (credentials) => {
+    try {
+      const response = await authAPI.login(credentials);
+      
+      if (response.success) {
+        setUser(response.user);
+        localStorage.setItem('token', response.token);
+        localStorage.setItem('user', JSON.stringify(response.user));
+        toast.success('Login successful!');
+        return { success: true };
+      } else {
+        toast.error(response.message || 'Login failed');
+        return { success: false, message: response.message };
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      toast.error('Login failed. Please try again.');
+      return { success: false, message: 'Network error' };
+    }
+  };
+
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    toast.success('Logged out successfully');
+  };
+
+  const register = async (userData) => {
+    try {
+      const response = await authAPI.register(userData);
+      
+      if (response.success) {
+        toast.success('Registration successful! Please login.');
+        return { success: true };
+      } else {
+        toast.error(response.message || 'Registration failed');
+        return { success: false, message: response.message };
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      toast.error('Registration failed. Please try again.');
+      return { success: false, message: 'Network error' };
+    }
+  };
+
+  const hasRole = (role) => {
+    return user && user.role === role;
+  };
+
+  const hasAnyRole = (roles) => {
+    return user && roles.includes(user.role);
+  };
+
+  const value = {
+    user,
+    login,
+    logout,
+    register,
+    loading,
+    hasRole,
+    hasAnyRole,
+    isAuthenticated: !!user,
+  };
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+// Mock API functions - replace with actual API calls
+const mockLogin = async (credentials) => {
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  // Mock user data
+  const users = [
+    { id: 1, email: 'admin@campus.edu', password: 'admin123', name: 'Admin User', role: 'ADMIN' },
+    { id: 2, email: 'user@campus.edu', password: 'user123', name: 'Regular User', role: 'USER' },
+    { id: 3, email: 'tech@campus.edu', password: 'tech123', name: 'Technician', role: 'TECHNICIAN' },
+  ];
+  
+  const user = users.find(u => u.email === credentials.email && u.password === credentials.password);
+  
+  if (user) {
+    return {
+      success: true,
+      user: { id: user.id, name: user.name, email: user.email, role: user.role },
+      token: 'mock-jwt-token'
+    };
+  }
+  
+  return {
+    success: false,
+    message: 'Invalid email or password'
+  };
+};
+
+const mockRegister = async (userData) => {
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  return {
+    success: true
+  };
+};
