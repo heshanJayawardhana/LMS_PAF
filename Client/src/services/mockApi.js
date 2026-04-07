@@ -57,10 +57,26 @@ export const authAPI = {
 
   register: async (userData) => {
     await delay(1000);
+
+    const existingUser = mockData.users.find(
+      (u) => u.email.toLowerCase() === userData.email.toLowerCase()
+    );
+
+    if (existingUser) {
+      return {
+        success: false,
+        message: 'Email is already registered',
+      };
+    }
+
+    const allowedRoles = ['USER', 'ADMIN', 'TECHNICIAN'];
+    const normalizedRole = allowedRoles.includes(userData.role) ? userData.role : 'USER';
+
     const newUser = {
       id: mockData.users.length + 1,
       ...userData,
-      role: 'USER',
+      role: normalizedRole,
+      department: userData.faculty || userData.department || 'General',
       status: 'ACTIVE',
       joinDate: new Date().toISOString().split('T')[0],
       lastLogin: null

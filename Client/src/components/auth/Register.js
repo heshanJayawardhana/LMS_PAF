@@ -1,28 +1,72 @@
 import React, { useState } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useForm } from 'react-hook-form';
+
+const roleOptions = [
+  { value: 'USER', label: 'Student' },
+  { value: 'ADMIN', label: 'Admin' },
+  { value: 'TECHNICIAN', label: 'Technician' },
+];
+
+const faculties = [
+  'Computer Science',
+  'Engineering',
+  'Business',
+  'Science',
+  'Arts',
+  'IT Support',
+];
+
+const academicYears = ['Year 1', 'Year 2', 'Year 3', 'Year 4', 'Postgraduate'];
 
 const Register = () => {
   const { register: registerUser, isAuthenticated } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const { register, handleSubmit, watch, formState: { errors } } = useForm();
-  
-  const password = watch('password');
+  const [submitError, setSubmitError] = useState('');
+  const navigate = useNavigate();
+  const { register, handleSubmit, watch, setError, formState: { errors } } = useForm();
+  const selectedRole = watch('role') || 'USER';
 
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
   }
 
   const onSubmit = async (data) => {
+    setSubmitError('');
     setIsLoading(true);
-    await registerUser(data);
+
+    const payload = {
+      name: data.name?.trim(),
+      email: data.email?.trim().toLowerCase(),
+      password: data.password,
+      role: data.role,
+      studentId: data.studentId?.trim(),
+      faculty: data.faculty,
+      academicYear: data.academicYear,
+    };
+
+    const result = await registerUser(payload);
+
+    if (result?.success) {
+      navigate('/login', {
+        replace: true,
+        state: { registeredEmail: payload.email },
+      });
+    } else {
+      const message = result?.message || 'Registration failed. Please try again.';
+      setSubmitError(message);
+      if (message.toLowerCase().includes('email')) {
+        setError('email', { type: 'server', message });
+      }
+    }
+
     setIsLoading(false);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-navy-50 to-navy-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+      <div className="max-w-5xl w-full space-y-8">
         <div>
           <div className="mx-auto h-12 w-12 bg-navy-700 rounded-lg flex items-center justify-center">
             <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -33,102 +77,174 @@ const Register = () => {
             Create Account
           </h2>
           <p className="mt-2 text-center text-sm text-navy-600">
-            Join Smart Campus Operations Hub
+            Register as a student, admin, or technician
           </p>
         </div>
         
         <div className="bg-white py-8 px-6 shadow-navy-lg rounded-lg">
           <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-navy-700">
-                Full Name
-              </label>
-              <input
-                {...register('name', { 
-                  required: 'Name is required',
-                  minLength: {
-                    value: 2,
-                    message: 'Name must be at least 2 characters'
-                  }
-                })}
-                type="text"
-                className="mt-1 input-field"
-                placeholder="Enter your full name"
-              />
-              {errors.name && (
-                <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
-              )}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-navy-700">
+                  Full name
+                </label>
+                <input
+                  {...register('name', {
+                    required: 'Name is required',
+                    minLength: {
+                      value: 2,
+                      message: 'Name must be at least 2 characters',
+                    },
+                  })}
+                  type="text"
+                  className="mt-1 input-field"
+                  placeholder="Enter full name"
+                />
+                {errors.name && (
+                  <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-navy-700">
+                  Email address
+                </label>
+                <input
+                  {...register('email', {
+                    required: 'Email is required',
+                    pattern: {
+                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                      message: 'Invalid email address',
+                    },
+                  })}
+                  type="email"
+                  className="mt-1 input-field"
+                  placeholder="Enter email"
+                />
+                {errors.email && (
+                  <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-navy-700">
+                  Password
+                </label>
+                <input
+                  {...register('password', {
+                    required: 'Password is required',
+                    minLength: {
+                      value: 6,
+                      message: 'Password must be at least 6 characters',
+                    },
+                  })}
+                  type="password"
+                  className="mt-1 input-field"
+                  placeholder="Create password"
+                />
+                {errors.password && (
+                  <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="studentId" className="block text-sm font-medium text-navy-700">
+                  Student ID
+                </label>
+                <input
+                  {...register('studentId', {
+                    validate: (value) => {
+                      if (selectedRole === 'USER' && !value?.trim()) {
+                        return 'Student ID is required for students';
+                      }
+                      return true;
+                    },
+                  })}
+                  type="text"
+                  className="mt-1 input-field"
+                  placeholder={selectedRole === 'USER' ? 'Enter student ID' : 'Optional'}
+                />
+                {errors.studentId && (
+                  <p className="mt-1 text-sm text-red-600">{errors.studentId.message}</p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="faculty" className="block text-sm font-medium text-navy-700">
+                  Faculty
+                </label>
+                <select
+                  {...register('faculty', { required: 'Faculty is required' })}
+                  className="mt-1 input-field"
+                >
+                  <option value="">Select faculty</option>
+                  {faculties.map((faculty) => (
+                    <option key={faculty} value={faculty}>{faculty}</option>
+                  ))}
+                </select>
+                {errors.faculty && (
+                  <p className="mt-1 text-sm text-red-600">{errors.faculty.message}</p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="academicYear" className="block text-sm font-medium text-navy-700">
+                  Academic year
+                </label>
+                <select
+                  {...register('academicYear', {
+                    validate: (value) => {
+                      if (selectedRole === 'USER' && !value) {
+                        return 'Academic year is required for students';
+                      }
+                      return true;
+                    },
+                  })}
+                  className="mt-1 input-field"
+                >
+                  <option value="">Select academic year</option>
+                  {academicYears.map((year) => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
+                {errors.academicYear && (
+                  <p className="mt-1 text-sm text-red-600">{errors.academicYear.message}</p>
+                )}
+              </div>
+
+              <div className="md:col-span-1">
+                <label htmlFor="role" className="block text-sm font-medium text-navy-700">
+                  Role
+                </label>
+                <select
+                  {...register('role', { required: 'Role is required' })}
+                  className="mt-1 input-field"
+                  defaultValue="USER"
+                >
+                  {roleOptions.map((role) => (
+                    <option key={role.value} value={role.value}>{role.label}</option>
+                  ))}
+                </select>
+                {errors.role && (
+                  <p className="mt-1 text-sm text-red-600">{errors.role.message}</p>
+                )}
+              </div>
+
             </div>
 
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-navy-700">
-                Email address
-              </label>
-              <input
-                {...register('email', { 
-                  required: 'Email is required',
-                  pattern: {
-                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: 'Invalid email address'
-                  }
-                })}
-                type="email"
-                className="mt-1 input-field"
-                placeholder="Enter your email"
-              />
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-navy-700">
-                Password
-              </label>
-              <input
-                {...register('password', { 
-                  required: 'Password is required',
-                  minLength: {
-                    value: 6,
-                    message: 'Password must be at least 6 characters'
-                  }
-                })}
-                type="password"
-                className="mt-1 input-field"
-                placeholder="Create a password"
-              />
-              {errors.password && (
-                <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-navy-700">
-                Confirm Password
-              </label>
-              <input
-                {...register('confirmPassword', { 
-                  required: 'Please confirm your password',
-                  validate: value => value === password || 'Passwords do not match'
-                })}
-                type="password"
-                className="mt-1 input-field"
-                placeholder="Confirm your password"
-              />
-              {errors.confirmPassword && (
-                <p className="mt-1 text-sm text-red-600">{errors.confirmPassword.message}</p>
-              )}
-            </div>
-
-            <div>
+            <div className="pt-1">
               <button
                 type="submit"
                 disabled={isLoading}
                 className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isLoading ? 'Creating account...' : 'Create account'}
+                {isLoading ? 'Creating account...' : 'Create user'}
               </button>
             </div>
+
+            {submitError && (
+              <p className="text-sm text-red-600 text-center">{submitError}</p>
+            )}
           </form>
 
           <div className="mt-6 text-center">
