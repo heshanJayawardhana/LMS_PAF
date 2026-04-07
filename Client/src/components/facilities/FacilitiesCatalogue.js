@@ -44,6 +44,7 @@ const FacilitiesCatalogue = () => {
   const [facilities, setFacilities] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     loadFacilities();
@@ -157,6 +158,27 @@ const FacilitiesCatalogue = () => {
     }
   };
 
+  const handleDownloadPdf = async () => {
+    setDownloading(true);
+    try {
+      const response = await facilitiesAPI.downloadReport();
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'facilities-report.pdf';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success('Facilities report downloaded');
+    } catch (error) {
+      toast.error('Failed to download facilities report');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   const formatType = (type) => {
     switch (type) {
       case 'MEETING_ROOM':
@@ -209,10 +231,19 @@ const FacilitiesCatalogue = () => {
           <p className="text-navy-600">Browse and manage campus facilities and equipment</p>
         </div>
         {isAdmin && (
-          <button onClick={openCreateModal} className="btn-primary flex items-center space-x-2">
-            <PlusIcon className="h-5 w-5" />
-            <span>Add Facility</span>
-          </button>
+          <div className="flex space-x-3">
+            <button
+              onClick={handleDownloadPdf}
+              className="btn-secondary flex items-center space-x-2"
+              disabled={downloading}
+            >
+              <span>{downloading ? 'Generating PDF...' : 'Download PDF'}</span>
+            </button>
+            <button onClick={openCreateModal} className="btn-primary flex items-center space-x-2">
+              <PlusIcon className="h-5 w-5" />
+              <span>Add Facility</span>
+            </button>
+          </div>
         )}
       </div>
 

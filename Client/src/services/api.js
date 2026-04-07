@@ -84,6 +84,18 @@ export const facilitiesAPI = {
     }
   },
 
+  downloadReport: async () => {
+    try {
+      const response = await api.get('/facilities/report', {
+        responseType: 'blob',
+      });
+      return response;
+    } catch (error) {
+      console.error('Download facilities report error:', error);
+      throw error;
+    }
+  },
+
   getById: async (id) => {
     try {
       const response = await api.get(`/facilities/${id}`);
