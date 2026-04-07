@@ -2,12 +2,10 @@ import axios from 'axios';
 
 // API Configuration
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api';
-const API_ROOT_URL = API_BASE_URL.replace(/\/api\/?$/, '');
 
 // Create axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -32,15 +30,10 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
+      // Token expired or invalid
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-
-      const requestUrl = error.config?.url || '';
-      const isSessionProbe = requestUrl.includes('/auth/me');
-      const isAlreadyPublicPage = ['/login', '/register', '/'].includes(window.location.pathname);
-      if (!isSessionProbe && !isAlreadyPublicPage) {
-        window.location.href = '/login';
-      }
+      window.location.href = '/login';
     }
     return Promise.reject(error);
   }
@@ -48,8 +41,6 @@ api.interceptors.response.use(
 
 // Authentication API
 export const authAPI = {
-  getGoogleOAuthUrl: () => `${API_ROOT_URL}/oauth2/authorization/google`,
-
   login: async (credentials) => {
     try {
       const response = await api.post('/auth/login', credentials);
@@ -76,16 +67,6 @@ export const authAPI = {
       return response.data;
     } catch (error) {
       console.error('Get current user error:', error);
-      throw error;
-    }
-  },
-
-  logout: async () => {
-    try {
-      const response = await api.post('/auth/logout');
-      return response.data;
-    } catch (error) {
-      console.error('Logout error:', error);
       throw error;
     }
   },
