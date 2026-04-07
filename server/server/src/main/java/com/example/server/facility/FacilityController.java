@@ -14,7 +14,7 @@ import com.lowagie.text.pdf.PdfWriter;
 import jakarta.validation.Valid;
 import java.awt.Color;
 import java.io.ByteArrayOutputStream;
-import java.time.format.DateTimeFormatter;
+//import java.time.format.DateTimeFormatter;
 import java.util.List;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -112,8 +112,6 @@ public class FacilityController {
                 cell.setPadding(6f);
                 table.addCell(cell);
             }
-
-            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
             for (Facility f : facilities) {
                 table.addCell(new Phrase(f.getName(), normalFont));

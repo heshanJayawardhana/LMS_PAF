@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { bookingsAPI } from '../../services/mockApi';
+import { bookingsAPI, facilitiesAPI } from '../../services/api';
 import {
   CalendarIcon,
   MagnifyingGlassIcon,
@@ -20,12 +20,25 @@ const BookingManagement = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [bookings, setBookings] = useState([]);
+  const [facilities, setFacilities] = useState([]);
   const [loading, setLoading] = useState(false);
   const { register, handleSubmit, formState: { errors }, reset } = useForm();
 
   useEffect(() => {
     loadBookings();
+    loadFacilities();
   }, [searchTerm, filterStatus]);
+
+  const loadFacilities = async () => {
+    try {
+      const response = await facilitiesAPI.getAll();
+      if (response.success) {
+        setFacilities(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to load facilities:', error);
+    }
+  };
 
   const loadBookings = async () => {
     setLoading(true);
@@ -167,17 +180,17 @@ const BookingManagement = () => {
   };
 
   const statuses = ['all', 'PENDING', 'APPROVED', 'REJECTED', 'CANCELLED', 'IN_PROGRESS', 'OPEN', 'RESOLVED'];
-  const resources = [
-    'Conference Room A',
-    'Computer Lab 301',
-    'Meeting Room B',
-    'Lecture Hall B',
-    'Physics Lab 201',
-  ];
 
   const handleCreateBooking = async (data) => {
     try {
-      const response = await bookingsAPI.create(data);
+      // Add required fields for backend
+      const bookingData = {
+        ...data,
+        userId: '2', // Mock user ID
+        requestedBy: 'Regular User' // Mock requested by
+      };
+      
+      const response = await bookingsAPI.create(bookingData);
       if (response.success) {
         loadBookings(); // Reload bookings
         setShowCreateModal(false);
@@ -398,8 +411,8 @@ const BookingManagement = () => {
                     className="input-field"
                   >
                     <option value="">Select a resource</option>
-                    {resources.map(resource => (
-                      <option key={resource} value={resource}>{resource}</option>
+                    {facilities.map(facility => (
+                      <option key={facility.id} value={facility.id}>{facility.name}</option>
                     ))}
                   </select>
                   {errors.resource && (
