@@ -1,112 +1,176 @@
 import React, { useState, useEffect } from 'react';
-import { facilitiesAPI } from '../../services/mockApi';
+import { facilitiesAPI } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
+import toast from 'react-hot-toast';
 import {
   BuildingOfficeIcon,
   MagnifyingGlassIcon,
-  FunnelIcon,
   PlusIcon,
-  EyeIcon,
   PencilIcon,
   TrashIcon,
-  CalendarIcon,
 } from '@heroicons/react/24/outline';
 
+const typeOptions = [
+  { value: 'LECTURE_HALL', label: 'Lecture Hall' },
+  { value: 'LAB', label: 'Lab' },
+  { value: 'MEETING_ROOM', label: 'Meeting Room' },
+  { value: 'EQUIPMENT', label: 'Equipment' },
+];
+
+const statusOptions = ['ACTIVE', 'OUT_OF_SERVICE', 'MAINTENANCE'];
+
+const defaultForm = {
+  name: '',
+  type: 'MEETING_ROOM',
+  capacity: 1,
+  location: '',
+  availabilityWindow: '',
+  status: 'ACTIVE',
+  description: '',
+  amenities: '',
+};
+
 const FacilitiesCatalogue = () => {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [filterLocation, setFilterLocation] = useState('');
+  const [minCapacity, setMinCapacity] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [editingFacility, setEditingFacility] = useState(null);
+  const [formData, setFormData] = useState(defaultForm);
   const [facilities, setFacilities] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     loadFacilities();
-  }, [searchTerm, filterType, filterStatus]);
+  }, [searchTerm, filterType, filterStatus, filterLocation, minCapacity]);
 
   const loadFacilities = async () => {
     setLoading(true);
     try {
+      const params = {
+        search: searchTerm || undefined,
+        type: filterType === 'all' ? undefined : filterType,
+        status: filterStatus === 'all' ? undefined : filterStatus,
+        location: filterLocation || undefined,
+        minCapacity: minCapacity ? Number(minCapacity) : undefined,
+      };
       const response = await facilitiesAPI.getAll({
-        search: searchTerm,
-        type: filterType,
-        status: filterStatus
+        ...params,
       });
       if (response.success) {
         setFacilities(response.data);
       }
     } catch (error) {
       console.error('Failed to load facilities:', error);
+      toast.error('Failed to load facilities');
     } finally {
       setLoading(false);
     }
   };
 
-  // Mock data for fallback
-  const mockFacilities = [
-    {
-      id: 1,
-      name: 'Conference Room A',
-      type: 'Meeting Room',
-      capacity: 20,
-      location: 'Building 1, Floor 2',
-      status: 'ACTIVE',
-      description: 'Modern conference room with projector and video conferencing',
-      amenities: ['Projector', 'Whiteboard', 'Video Conferencing', 'WiFi'],
-    },
-    {
-      id: 2,
-      name: 'Computer Lab 301',
-      type: 'Laboratory',
-      capacity: 30,
-      location: 'Building 3, Floor 3',
-      status: 'ACTIVE',
-      description: 'Computer lab with 30 workstations',
-      amenities: ['Computers', 'Projector', 'WiFi', 'Air Conditioning'],
-    },
-    {
-      id: 3,
-      name: 'Lecture Hall B',
-      type: 'Lecture Hall',
-      capacity: 150,
-      location: 'Building 2, Floor 1',
-      status: 'ACTIVE',
-      description: 'Large lecture hall with audio system',
-      amenities: ['Projector', 'Sound System', 'Microphones', 'WiFi'],
-    },
-    {
-      id: 4,
-      name: 'Meeting Room C',
-      type: 'Meeting Room',
-      capacity: 8,
-      location: 'Building 1, Floor 1',
-      status: 'OUT_OF_SERVICE',
-      description: 'Small meeting room for team discussions',
-      amenities: ['Whiteboard', 'TV Screen', 'WiFi'],
-    },
-    {
-      id: 5,
-      name: 'Physics Lab 201',
-      type: 'Laboratory',
-      capacity: 25,
-      location: 'Building 2, Floor 2',
-      status: 'ACTIVE',
-      description: 'Physics laboratory with experimental equipment',
-      amenities: ['Lab Equipment', 'Safety Gear', 'WiFi', 'Storage'],
-    },
-  ];
+  const openCreateModal = () => {
+    setEditingFacility(null);
+    setFormData(defaultForm);
+    setShowModal(true);
+  };
 
-  const types = ['all', 'Meeting Room', 'Laboratory', 'Lecture Hall', 'Equipment'];
-  const statuses = ['all', 'ACTIVE', 'OUT_OF_SERVICE', 'MAINTENANCE'];
+  const openEditModal = (facility) => {
+    setEditingFacility(facility);
+    setFormData({
+      name: facility.name || '',
+      type: facility.type || 'MEETING_ROOM',
+      capacity: facility.capacity || 1,
+      location: facility.location || '',
+      availabilityWindow: facility.availabilityWindow || '',
+      status: facility.status || 'ACTIVE',
+      description: facility.description || '',
+      amenities: Array.isArray(facility.amenities) ? facility.amenities.join(', ') : '',
+    });
+    setShowModal(true);
+  };
 
-  const displayFacilities = facilities.length > 0 ? facilities : mockFacilities;
-  const filteredFacilities = displayFacilities.filter(facility => {
-    const matchesSearch = facility.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         facility.location.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = filterType === 'all' || facility.type === filterType;
-    const matchesStatus = filterStatus === 'all' || facility.status === filterStatus;
-    
-    return matchesSearch && matchesType && matchesStatus;
-  });
+  const closeModal = () => {
+    setShowModal(false);
+    setEditingFacility(null);
+    setFormData(defaultForm);
+  };
+
+  const handleFormChange = (key, value) => {
+    setFormData((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleSaveFacility = async () => {
+    if (!formData.name.trim() || !formData.location.trim() || !formData.availabilityWindow.trim()) {
+      toast.error('Please fill all required fields');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const payload = {
+        name: formData.name.trim(),
+        type: formData.type,
+        capacity: Number(formData.capacity),
+        location: formData.location.trim(),
+        availabilityWindow: formData.availabilityWindow.trim(),
+        status: formData.status,
+        description: formData.description.trim(),
+        amenities: formData.amenities
+          .split(',')
+          .map((item) => item.trim())
+          .filter(Boolean),
+      };
+
+      if (editingFacility?.id) {
+        await facilitiesAPI.update(editingFacility.id, payload);
+        toast.success('Facility updated successfully');
+      } else {
+        await facilitiesAPI.create(payload);
+        toast.success('Facility created successfully');
+      }
+      closeModal();
+      await loadFacilities();
+    } catch (error) {
+      console.error('Failed to save facility:', error);
+      toast.error('Failed to save facility');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteFacility = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this facility?')) {
+      return;
+    }
+    try {
+      await facilitiesAPI.delete(id);
+      toast.success('Facility deleted successfully');
+      await loadFacilities();
+    } catch (error) {
+      console.error('Failed to delete facility:', error);
+      toast.error('Failed to delete facility');
+    }
+  };
+
+  const formatType = (type) => {
+    switch (type) {
+      case 'MEETING_ROOM':
+        return 'Meeting Room';
+      case 'LECTURE_HALL':
+        return 'Lecture Hall';
+      case 'LAB':
+        return 'Lab';
+      case 'EQUIPMENT':
+        return 'Equipment';
+      default:
+        return type;
+    }
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -123,13 +187,13 @@ const FacilitiesCatalogue = () => {
 
   const getTypeIcon = (type) => {
     switch (type) {
-      case 'Meeting Room':
+      case 'MEETING_ROOM':
         return '🏢';
-      case 'Laboratory':
+      case 'LAB':
         return '🔬';
-      case 'Lecture Hall':
+      case 'LECTURE_HALL':
         return '🎓';
-      case 'Equipment':
+      case 'EQUIPMENT':
         return '⚙️';
       default:
         return '🏛️';
@@ -144,20 +208,19 @@ const FacilitiesCatalogue = () => {
           <h1 className="text-2xl font-bold text-navy-900">Facilities & Assets</h1>
           <p className="text-navy-600">Browse and manage campus facilities and equipment</p>
         </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="btn-primary flex items-center space-x-2"
-        >
-          <PlusIcon className="h-5 w-5" />
-          <span>Add Facility</span>
-        </button>
+        {isAdmin && (
+          <button onClick={openCreateModal} className="btn-primary flex items-center space-x-2">
+            <PlusIcon className="h-5 w-5" />
+            <span>Add Facility</span>
+          </button>
+        )}
       </div>
 
       {/* Search and Filters */}
       <div className="card p-4">
-        <div className="flex flex-col space-y-4 lg:flex-row lg:space-y-0 lg:space-x-4">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
           {/* Search */}
-          <div className="flex-1">
+          <div className="lg:col-span-2">
             <div className="relative">
               <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-navy-400" />
               <input
@@ -170,52 +233,55 @@ const FacilitiesCatalogue = () => {
             </div>
           </div>
 
-          {/* Filters */}
-          <div className="flex space-x-4">
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              className="input-field"
-            >
-              {types.map(type => (
-                <option key={type} value={type}>
-                  {type === 'all' ? 'All Types' : type}
-                </option>
-              ))}
-            </select>
+          <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="input-field">
+            <option value="all">All Types</option>
+            {typeOptions.map((type) => (
+              <option key={type.value} value={type.value}>{type.label}</option>
+            ))}
+          </select>
 
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="input-field"
-            >
-              {statuses.map(status => (
-                <option key={status} value={status}>
-                  {status === 'all' ? 'All Statuses' : status}
-                </option>
-              ))}
-            </select>
-          </div>
+          <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="input-field">
+            <option value="all">All Statuses</option>
+            {statusOptions.map((status) => (
+              <option key={status} value={status}>{status}</option>
+            ))}
+          </select>
+
+          <input
+            type="number"
+            min="1"
+            value={minCapacity}
+            onChange={(e) => setMinCapacity(e.target.value)}
+            placeholder="Min capacity"
+            className="input-field"
+          />
+          <input
+            type="text"
+            value={filterLocation}
+            onChange={(e) => setFilterLocation(e.target.value)}
+            placeholder="Location filter"
+            className="input-field lg:col-span-2"
+          />
         </div>
       </div>
 
       {/* Results Summary */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-navy-600">
-          Showing {filteredFacilities.length} of {facilities.length} facilities
+          Showing {facilities.length} facilities
         </p>
       </div>
 
       {/* Facilities Grid */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {filteredFacilities.map((facility) => (
+        {facilities.map((facility) => (
           <div key={facility.id} className="card p-6 hover:shadow-navy-lg transition-shadow duration-200">
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center space-x-3">
                 <div className="text-3xl">{getTypeIcon(facility.type)}</div>
                 <div>
                   <h3 className="text-lg font-semibold text-navy-900">{facility.name}</h3>
-                  <p className="text-sm text-navy-600">{facility.type}</p>
+                  <p className="text-sm text-navy-600">{formatType(facility.type)}</p>
                 </div>
               </div>
               <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(facility.status)}`}>
@@ -236,10 +302,14 @@ const FacilitiesCatalogue = () => {
                 Capacity: {facility.capacity} people
               </div>
 
+              <div className="text-sm text-navy-600">
+                Availability: {facility.availabilityWindow || 'N/A'}
+              </div>
+
               <p className="text-sm text-navy-700">{facility.description}</p>
 
               <div className="flex flex-wrap gap-2">
-                {facility.amenities.map((amenity, index) => (
+                {(facility.amenities || []).map((amenity, index) => (
                   <span key={index} className="px-2 py-1 bg-navy-100 text-navy-700 text-xs rounded-full">
                     {amenity}
                   </span>
@@ -247,22 +317,30 @@ const FacilitiesCatalogue = () => {
               </div>
             </div>
 
-            <div className="mt-6 flex space-x-2">
-              <button className="flex-1 btn-secondary flex items-center justify-center space-x-1">
-                <EyeIcon className="h-4 w-4" />
-                <span>View</span>
-              </button>
-              <button className="flex-1 btn-primary flex items-center justify-center space-x-1">
-                <CalendarIcon className="h-4 w-4" />
-                <span>Book</span>
-              </button>
-            </div>
+            {isAdmin && (
+              <div className="mt-6 flex space-x-2">
+                <button
+                  className="flex-1 btn-secondary flex items-center justify-center space-x-1"
+                  onClick={() => openEditModal(facility)}
+                >
+                  <PencilIcon className="h-4 w-4" />
+                  <span>Edit</span>
+                </button>
+                <button
+                  className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center justify-center space-x-1"
+                  onClick={() => handleDeleteFacility(facility.id)}
+                >
+                  <TrashIcon className="h-4 w-4" />
+                  <span>Delete</span>
+                </button>
+              </div>
+            )}
           </div>
         ))}
       </div>
 
       {/* Empty State */}
-      {filteredFacilities.length === 0 && (
+      {!loading && facilities.length === 0 && (
         <div className="text-center py-12">
           <BuildingOfficeIcon className="mx-auto h-12 w-12 text-navy-400" />
           <h3 className="mt-2 text-sm font-medium text-navy-900">No facilities found</h3>
@@ -272,27 +350,93 @@ const FacilitiesCatalogue = () => {
         </div>
       )}
 
-      {/* Add Facility Modal (placeholder) */}
-      {showAddModal && (
+      {loading && (
+        <div className="text-center text-navy-600 py-4">Loading facilities...</div>
+      )}
+
+      {showModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-lg bg-white">
+          <div className="relative top-10 mx-auto p-5 border w-[700px] shadow-lg rounded-lg bg-white">
             <div className="mt-3">
-              <h3 className="text-lg font-semibold text-navy-900 mb-4">Add New Facility</h3>
-              <p className="text-sm text-navy-600 mb-4">
-                This modal would contain a form to add new facilities.
-              </p>
+              <h3 className="text-lg font-semibold text-navy-900 mb-4">
+                {editingFacility ? 'Update Facility' : 'Add New Facility'}
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <input
+                  type="text"
+                  className="input-field"
+                  placeholder="Facility name *"
+                  value={formData.name}
+                  onChange={(e) => handleFormChange('name', e.target.value)}
+                />
+                <select
+                  className="input-field"
+                  value={formData.type}
+                  onChange={(e) => handleFormChange('type', e.target.value)}
+                >
+                  {typeOptions.map((type) => (
+                    <option key={type.value} value={type.value}>{type.label}</option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  min="1"
+                  className="input-field"
+                  placeholder="Capacity *"
+                  value={formData.capacity}
+                  onChange={(e) => handleFormChange('capacity', e.target.value)}
+                />
+                <select
+                  className="input-field"
+                  value={formData.status}
+                  onChange={(e) => handleFormChange('status', e.target.value)}
+                >
+                  {statusOptions.map((status) => (
+                    <option key={status} value={status}>{status}</option>
+                  ))}
+                </select>
+                <input
+                  type="text"
+                  className="input-field md:col-span-2"
+                  placeholder="Location *"
+                  value={formData.location}
+                  onChange={(e) => handleFormChange('location', e.target.value)}
+                />
+                <input
+                  type="text"
+                  className="input-field md:col-span-2"
+                  placeholder="Availability window (e.g. Mon-Fri 08:00-18:00) *"
+                  value={formData.availabilityWindow}
+                  onChange={(e) => handleFormChange('availabilityWindow', e.target.value)}
+                />
+                <input
+                  type="text"
+                  className="input-field md:col-span-2"
+                  placeholder="Amenities (comma separated)"
+                  value={formData.amenities}
+                  onChange={(e) => handleFormChange('amenities', e.target.value)}
+                />
+                <textarea
+                  className="input-field md:col-span-2"
+                  placeholder="Description"
+                  rows="3"
+                  value={formData.description}
+                  onChange={(e) => handleFormChange('description', e.target.value)}
+                />
+              </div>
               <div className="flex justify-end space-x-2">
                 <button
-                  onClick={() => setShowAddModal(false)}
+                  onClick={closeModal}
                   className="btn-secondary"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={() => setShowAddModal(false)}
+                  onClick={handleSaveFacility}
                   className="btn-primary"
+                  disabled={saving}
                 >
-                  Add Facility
+                  {saving ? 'Saving...' : editingFacility ? 'Update Facility' : 'Add Facility'}
                 </button>
               </div>
             </div>
