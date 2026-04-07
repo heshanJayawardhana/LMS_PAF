@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authAPI } from '../services/mockApi';
+import { authAPI } from '../services/api';
 import toast from 'react-hot-toast';
 
 const AuthContext = createContext();
@@ -17,14 +17,42 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
-    
-    if (token && userData) {
-      setUser(JSON.parse(userData));
-    }
-    setLoading(false);
+    const bootstrapSession = async () => {
+      const cachedUser = localStorage.getItem('user');
+      if (cachedUser) {
+        try {
+          setUser(JSON.parse(cachedUser));
+        } catch (error) {
+          localStorage.removeItem('user');
+        }
+      }
+
+      try {
+        const response = await authAPI.getCurrentUser();
+        if (response?.success && response?.data) {
+          setUser(response.data);
+          localStorage.setItem('token', 'oauth-session');
+          localStorage.setItem('user', JSON.stringify(response.data));
+        } else {
+          setUser(null);
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+        }
+      } catch (error) {
+        setUser(null);
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    bootstrapSession();
   }, []);
+
+  const loginWithGoogle = () => {
+    window.location.href = authAPI.getGoogleOAuthUrl();
+  };
 
   const login = async (credentials) => {
     try {
@@ -47,7 +75,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await authAPI.logout();
+    } catch (error) {
+      console.error('Logout API error:', error);
+    }
     setUser(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -83,6 +116,7 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     login,
+    loginWithGoogle,
     logout,
     register,
     loading,
@@ -96,40 +130,4 @@ export const AuthProvider = ({ children }) => {
       {children}
     </AuthContext.Provider>
   );
-};
-
-// Mock API functions - replace with actual API calls
-const mockLogin = async (credentials) => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  // Mock user data
-  const users = [
-    { id: 1, email: 'admin@campus.edu', password: 'admin123', name: 'Admin User', role: 'ADMIN' },
-    { id: 2, email: 'user@campus.edu', password: 'user123', name: 'Regular User', role: 'USER' },
-    { id: 3, email: 'tech@campus.edu', password: 'tech123', name: 'Technician', role: 'TECHNICIAN' },
-  ];
-  
-  const user = users.find(u => u.email === credentials.email && u.password === credentials.password);
-  
-  if (user) {
-    return {
-      success: true,
-      user: { id: user.id, name: user.name, email: user.email, role: user.role },
-      token: 'mock-jwt-token'
-    };
-  }
-  
-  return {
-    success: false,
-    message: 'Invalid email or password'
-  };
-};
-
-const mockRegister = async (userData) => {
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  return {
-    success: true
-  };
 };
