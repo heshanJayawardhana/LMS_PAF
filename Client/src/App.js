@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import { Toaster } from 'react-hot-toast';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -28,13 +29,15 @@ import UserManagement from './components/admin/UserManagement';
 import Settings from './components/admin/Settings';
 
 const queryClient = new QueryClient();
+const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || '';
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <NotificationProvider>
-          <Router>
+      <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+        <AuthProvider>
+          <NotificationProvider>
+            <Router>
             <div className="min-h-screen bg-gray-50">
               <Routes>
                 {/* Public Routes */}
@@ -143,9 +146,10 @@ function App() {
                 }}
               />
             </div>
-          </Router>
-        </NotificationProvider>
-      </AuthProvider>
+            </Router>
+          </NotificationProvider>
+        </AuthProvider>
+      </GoogleOAuthProvider>
     </QueryClientProvider>
   );
 }
