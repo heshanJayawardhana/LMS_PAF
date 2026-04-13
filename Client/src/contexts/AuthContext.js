@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authAPI } from '../services/mockApi';
+import { authAPI } from '../services/api';
 import toast from 'react-hot-toast';
 
 const AuthContext = createContext();
@@ -47,6 +47,28 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const loginWithGoogle = async (idToken) => {
+    try {
+      const response = await authAPI.googleLogin(idToken);
+
+      if (response.success) {
+        setUser(response.user);
+        localStorage.setItem('token', response.token);
+        localStorage.setItem('user', JSON.stringify(response.user));
+        toast.success('Login successful!');
+        return { success: true };
+      }
+
+      toast.error(response.message || 'Google sign-in failed');
+      return { success: false, message: response.message };
+    } catch (error) {
+      console.error('Google login error:', error);
+      const message = error.response?.data?.message || 'Google sign-in failed. Please try again.';
+      toast.error(message);
+      return { success: false, message };
+    }
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem('token');
@@ -83,6 +105,7 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     login,
+    loginWithGoogle,
     logout,
     register,
     loading,

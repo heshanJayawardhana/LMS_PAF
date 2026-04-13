@@ -40,11 +40,24 @@ api.interceptors.response.use(
 );
 
 // Authentication API
+const normalizeAuthResult = (payload) => {
+  if (payload?.success && payload?.data?.user && payload?.data?.token) {
+    return {
+      success: true,
+      user: payload.data.user,
+      token: payload.data.token,
+      message: payload.message,
+    };
+  }
+
+  return payload;
+};
+
 export const authAPI = {
   login: async (credentials) => {
     try {
       const response = await api.post('/auth/login', credentials);
-      return response.data;
+      return normalizeAuthResult(response.data);
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -64,9 +77,26 @@ export const authAPI = {
   getCurrentUser: async () => {
     try {
       const response = await api.get('/auth/me');
+      if (response.data?.success && response.data?.data) {
+        return {
+          success: true,
+          user: response.data.data,
+          message: response.data.message,
+        };
+      }
       return response.data;
     } catch (error) {
       console.error('Get current user error:', error);
+      throw error;
+    }
+  },
+
+  googleLogin: async (idToken) => {
+    try {
+      const response = await api.post('/auth/google', { idToken });
+      return normalizeAuthResult(response.data);
+    } catch (error) {
+      console.error('Google login error:', error);
       throw error;
     }
   },
