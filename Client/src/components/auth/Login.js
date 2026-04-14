@@ -36,7 +36,10 @@ const Login = () => {
     toast.error('Google sign-in was cancelled or failed');
   };
 
-  const googleClientIdConfigured = Boolean(process.env.REACT_APP_GOOGLE_CLIENT_ID);
+  const googleClientId = process.env.REACT_APP_GOOGLE_CLIENT_ID || '';
+  const googleClientIdConfigured = Boolean(
+    googleClientId && !googleClientId.includes('your-google-client-id')
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-navy-50 to-navy-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -110,18 +113,18 @@ const Login = () => {
             </div>
           </form>
 
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-navy-200"></div>
+          {googleClientIdConfigured && (
+            <div className="mt-6">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-navy-200"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white text-navy-500">Or continue with</span>
+                </div>
               </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-navy-500">Or continue with</span>
-              </div>
-            </div>
 
-            <div className="mt-6 flex justify-center">
-              {googleClientIdConfigured ? (
+              <div className="mt-6 flex justify-center">
                 <div className="w-full">
                   <GoogleLogin
                     onSuccess={handleGoogleSuccess}
@@ -133,13 +136,9 @@ const Login = () => {
                     <p className="mt-2 text-center text-sm text-navy-600">Signing in with Google...</p>
                   )}
                 </div>
-              ) : (
-                <p className="text-sm text-center text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3 w-full">
-                  Google Sign-In is not configured. Set REACT_APP_GOOGLE_CLIENT_ID in your frontend environment.
-                </p>
-              )}
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="mt-6 text-center">
             <p className="text-sm text-navy-600">
@@ -151,10 +150,8 @@ const Login = () => {
           </div>
 
           <div className="mt-4 text-xs text-navy-500">
-            <p className="font-semibold mb-2">Demo Accounts:</p>
-            <p>Admin: admin@campus.edu / admin123</p>
-            <p>User: user@campus.edu / user123</p>
-            <p>Technician: tech@campus.edu / tech123</p>
+            <p className="font-semibold mb-2">Account Tip:</p>
+            <p>Use an account you created from the Sign up page, then sign in here.</p>
           </div>
         </div>
       </div>

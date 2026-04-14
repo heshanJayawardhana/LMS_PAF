@@ -40,6 +40,14 @@ public class JwtService {
         return extractClaims(token).getSubject();
     }
 
+    public String extractRole(String token) {
+        Object role = extractClaims(token).get("role");
+        if (role instanceof String roleName) {
+            return roleName;
+        }
+        throw new IllegalArgumentException("Token is missing role claim");
+    }
+
     public boolean isValid(String token) {
         try {
             extractClaims(token);

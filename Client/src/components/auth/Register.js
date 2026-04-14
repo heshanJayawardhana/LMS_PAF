@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useForm } from 'react-hook-form';
+import { GoogleLogin } from '@react-oauth/google';
+import toast from 'react-hot-toast';
 
 const roleOptions = [
   { value: 'USER', label: 'Student' },
@@ -21,12 +23,17 @@ const faculties = [
 const academicYears = ['Year 1', 'Year 2', 'Year 3', 'Year 4', 'Postgraduate'];
 
 const Register = () => {
-  const { register: registerUser, isAuthenticated } = useAuth();
+  const { register: registerUser, loginWithGoogle, isAuthenticated } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const navigate = useNavigate();
   const { register, handleSubmit, watch, setError, formState: { errors } } = useForm();
   const selectedRole = watch('role') || 'USER';
+  const googleClientId = process.env.REACT_APP_GOOGLE_CLIENT_ID || '';
+  const googleClientIdConfigured = Boolean(
+    googleClientId && !googleClientId.includes('your-google-client-id')
+  );
 
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
@@ -62,6 +69,25 @@ const Register = () => {
     }
 
     setIsLoading(false);
+  };
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    if (!credentialResponse?.credential) {
+      toast.error('Google sign-in did not return a token');
+      return;
+    }
+
+    setIsGoogleLoading(true);
+    const result = await loginWithGoogle(credentialResponse.credential);
+    setIsGoogleLoading(false);
+
+    if (!result?.success) {
+      setSubmitError(result?.message || 'Google sign-in failed. Please try again.');
+    }
+  };
+
+  const handleGoogleError = () => {
+    toast.error('Google sign-in was cancelled or failed');
   };
 
   return (
@@ -246,6 +272,33 @@ const Register = () => {
               <p className="text-sm text-red-600 text-center">{submitError}</p>
             )}
           </form>
+
+          {googleClientIdConfigured && (
+            <div className="mt-6">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-navy-200"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white text-navy-500">Or continue with</span>
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-center">
+                <div className="w-full">
+                  <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={handleGoogleError}
+                    width="100%"
+                    useOneTap
+                  />
+                  {isGoogleLoading && (
+                    <p className="mt-2 text-center text-sm text-navy-600">Signing in with Google...</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="mt-6 text-center">
             <p className="text-sm text-navy-600">

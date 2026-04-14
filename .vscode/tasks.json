@@ -1,0 +1,27 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run Client Dev Server",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location \"Client\"; npm start"
+			],
+			"isBackground": true
+		},
+		{
+			"label": "Run Backend Server",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Set-Location \"server/server\"; .\\mvnw.cmd spring-boot:run"
+			],
+			"isBackground": true
+		}
+	]
+}

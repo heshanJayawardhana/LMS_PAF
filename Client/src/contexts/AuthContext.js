@@ -16,14 +16,56 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
-    
-    if (token && userData) {
-      setUser(JSON.parse(userData));
+  const extractApiMessage = (error, fallbackMessage) => {
+    const payload = error?.response?.data;
+
+    if (typeof payload?.message === 'string' && payload.message.trim()) {
+      return payload.message;
     }
-    setLoading(false);
+
+    if (payload?.data && typeof payload.data === 'object') {
+      const firstFieldError = Object.values(payload.data).find(
+        (value) => typeof value === 'string' && value.trim()
+      );
+      if (firstFieldError) {
+        return firstFieldError;
+      }
+    }
+
+    if (!error?.response) {
+      return 'Cannot reach server. Please ensure backend is running on port 8080.';
+    }
+
+    return fallbackMessage;
+  };
+
+  useEffect(() => {
+    const bootstrapAuth = async () => {
+      const token = localStorage.getItem('token');
+
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const response = await authAPI.getCurrentUser();
+        if (response.success && response.user) {
+          setUser(response.user);
+          localStorage.setItem('user', JSON.stringify(response.user));
+        } else {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+        }
+      } catch (error) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    bootstrapAuth();
   }, []);
 
   const login = async (credentials) => {
@@ -42,8 +84,9 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Login error:', error);
-      toast.error('Login failed. Please try again.');
-      return { success: false, message: 'Network error' };
+      const message = extractApiMessage(error, 'Login failed. Please try again.');
+      toast.error(message);
+      return { success: false, message };
     }
   };
 
@@ -63,7 +106,7 @@ export const AuthProvider = ({ children }) => {
       return { success: false, message: response.message };
     } catch (error) {
       console.error('Google login error:', error);
-      const message = error.response?.data?.message || 'Google sign-in failed. Please try again.';
+      const message = extractApiMessage(error, 'Google sign-in failed. Please try again.');
       toast.error(message);
       return { success: false, message };
     }
@@ -89,8 +132,9 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Registration error:', error);
-      toast.error('Registration failed. Please try again.');
-      return { success: false, message: 'Network error' };
+      const message = extractApiMessage(error, 'Registration failed. Please try again.');
+      toast.error(message);
+      return { success: false, message };
     }
   };
 

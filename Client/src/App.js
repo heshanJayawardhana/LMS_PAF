@@ -30,126 +30,133 @@ import Settings from './components/admin/Settings';
 
 const queryClient = new QueryClient();
 const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || '';
+const hasGoogleClientId = GOOGLE_CLIENT_ID && !GOOGLE_CLIENT_ID.includes('your-google-client-id');
 
 function App() {
+  const appTree = (
+    <AuthProvider>
+      <NotificationProvider>
+        <Router>
+        <div className="min-h-screen bg-gray-50">
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            
+            {/* Protected Routes */}
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<Dashboard />} />
+            </Route>
+            
+            {/* Module Routes */}
+            <Route path="/facilities" element={
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<FacilitiesCatalogue />} />
+            </Route>
+            
+            <Route path="/bookings" element={
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<BookingManagement />} />
+            </Route>
+            
+            <Route path="/tickets" element={
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<TicketManagement />} />
+            </Route>
+            
+            <Route path="/notifications" element={
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<Notifications />} />
+            </Route>
+            
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<Profile />} />
+            </Route>
+            
+            {/* Admin Routes */}
+            <Route path="/admin/dashboard" element={
+              <ProtectedRoute requiredRole="ADMIN">
+                <Layout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<AdminDashboard />} />
+            </Route>
+            
+            <Route path="/admin/users" element={
+              <ProtectedRoute requiredRole="ADMIN">
+                <Layout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<UserManagement />} />
+            </Route>
+            
+            <Route path="/admin/settings" element={
+              <ProtectedRoute requiredRole="ADMIN">
+                <Layout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<Settings />} />
+            </Route>
+            
+            {/* Catch all */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+          
+          {/* Global Toast Notifications */}
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: '#1a365d',
+                color: '#fff',
+              },
+              success: {
+                style: {
+                  background: '#059669',
+                },
+              },
+              error: {
+                style: {
+                  background: '#dc2626',
+                },
+              },
+            }}
+          />
+        </div>
+        </Router>
+      </NotificationProvider>
+    </AuthProvider>
+  );
+
   return (
     <QueryClientProvider client={queryClient}>
-      <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-        <AuthProvider>
-          <NotificationProvider>
-            <Router>
-            <div className="min-h-screen bg-gray-50">
-              <Routes>
-                {/* Public Routes */}
-                <Route path="/" element={<LandingPage />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                
-                {/* Protected Routes */}
-                <Route path="/dashboard" element={
-                  <ProtectedRoute>
-                    <Layout />
-                  </ProtectedRoute>
-                }>
-                  <Route index element={<Dashboard />} />
-                </Route>
-                
-                {/* Module Routes */}
-                <Route path="/facilities" element={
-                  <ProtectedRoute>
-                    <Layout />
-                  </ProtectedRoute>
-                }>
-                  <Route index element={<FacilitiesCatalogue />} />
-                </Route>
-                
-                <Route path="/bookings" element={
-                  <ProtectedRoute>
-                    <Layout />
-                  </ProtectedRoute>
-                }>
-                  <Route index element={<BookingManagement />} />
-                </Route>
-                
-                <Route path="/tickets" element={
-                  <ProtectedRoute>
-                    <Layout />
-                  </ProtectedRoute>
-                }>
-                  <Route index element={<TicketManagement />} />
-                </Route>
-                
-                <Route path="/notifications" element={
-                  <ProtectedRoute>
-                    <Layout />
-                  </ProtectedRoute>
-                }>
-                  <Route index element={<Notifications />} />
-                </Route>
-                
-                <Route path="/profile" element={
-                  <ProtectedRoute>
-                    <Layout />
-                  </ProtectedRoute>
-                }>
-                  <Route index element={<Profile />} />
-                </Route>
-                
-                {/* Admin Routes */}
-                <Route path="/admin/dashboard" element={
-                  <ProtectedRoute>
-                    <Layout />
-                  </ProtectedRoute>
-                }>
-                  <Route index element={<AdminDashboard />} />
-                </Route>
-                
-                <Route path="/admin/users" element={
-                  <ProtectedRoute>
-                    <Layout />
-                  </ProtectedRoute>
-                }>
-                  <Route index element={<UserManagement />} />
-                </Route>
-                
-                <Route path="/admin/settings" element={
-                  <ProtectedRoute>
-                    <Layout />
-                  </ProtectedRoute>
-                }>
-                  <Route index element={<Settings />} />
-                </Route>
-                
-                {/* Catch all */}
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-              
-              {/* Global Toast Notifications */}
-              <Toaster
-                position="top-right"
-                toastOptions={{
-                  duration: 4000,
-                  style: {
-                    background: '#1a365d',
-                    color: '#fff',
-                  },
-                  success: {
-                    style: {
-                      background: '#059669',
-                    },
-                  },
-                  error: {
-                    style: {
-                      background: '#dc2626',
-                    },
-                  },
-                }}
-              />
-            </div>
-            </Router>
-          </NotificationProvider>
-        </AuthProvider>
-      </GoogleOAuthProvider>
+      {hasGoogleClientId ? (
+        <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>{appTree}</GoogleOAuthProvider>
+      ) : (
+        appTree
+      )}
     </QueryClientProvider>
   );
 }
