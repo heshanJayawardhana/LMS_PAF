@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import { getRoleHomeRoute, useAuth } from '../../contexts/AuthContext';
 import { useForm } from 'react-hook-form';
 import { GoogleLogin } from '@react-oauth/google';
 import toast from 'react-hot-toast';
@@ -23,7 +23,7 @@ const faculties = [
 const academicYears = ['Year 1', 'Year 2', 'Year 3', 'Year 4', 'Postgraduate'];
 
 const Register = () => {
-  const { register: registerUser, loginWithGoogle, isAuthenticated } = useAuth();
+  const { register: registerUser, loginWithGoogle, isAuthenticated, user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [submitError, setSubmitError] = useState('');
@@ -36,7 +36,7 @@ const Register = () => {
   );
 
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={getRoleHomeRoute(user?.role)} replace />;
   }
 
   const onSubmit = async (data) => {
@@ -83,6 +83,8 @@ const Register = () => {
 
     if (!result?.success) {
       setSubmitError(result?.message || 'Google sign-in failed. Please try again.');
+    } else {
+      navigate(result.redirectTo || getRoleHomeRoute(result.user?.role), { replace: true });
     }
   };
 

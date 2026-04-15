@@ -4,6 +4,18 @@ import toast from 'react-hot-toast';
 
 const AuthContext = createContext();
 
+export const getRoleHomeRoute = (role) => {
+  switch (role) {
+    case 'ADMIN':
+      return '/admin/dashboard';
+    case 'TECHNICIAN':
+      return '/tickets';
+    case 'USER':
+    default:
+      return '/dashboard';
+  }
+};
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -77,7 +89,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('token', response.token);
         localStorage.setItem('user', JSON.stringify(response.user));
         toast.success('Login successful!');
-        return { success: true };
+        return { success: true, user: response.user, redirectTo: getRoleHomeRoute(response.user?.role) };
       } else {
         toast.error(response.message || 'Login failed');
         return { success: false, message: response.message };
@@ -99,7 +111,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('token', response.token);
         localStorage.setItem('user', JSON.stringify(response.user));
         toast.success('Login successful!');
-        return { success: true };
+        return { success: true, user: response.user, redirectTo: getRoleHomeRoute(response.user?.role) };
       }
 
       toast.error(response.message || 'Google sign-in failed');

@@ -1,24 +1,29 @@
 import React, { useState } from 'react';
-import { Link, Navigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { getRoleHomeRoute, useAuth } from '../../contexts/AuthContext';
 import { useForm } from 'react-hook-form';
 import { GoogleLogin } from '@react-oauth/google';
 import toast from 'react-hot-toast';
 
 const Login = () => {
-  const { login, loginWithGoogle, isAuthenticated } = useAuth();
+  const { login, loginWithGoogle, isAuthenticated, user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const { register, handleSubmit, formState: { errors } } = useForm();
+  const navigate = useNavigate();
 
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={getRoleHomeRoute(user?.role)} replace />;
   }
 
   const onSubmit = async (data) => {
     setIsLoading(true);
-    await login(data);
+    const result = await login(data);
     setIsLoading(false);
+
+    if (result?.success) {
+      navigate(result.redirectTo || getRoleHomeRoute(result.user?.role), { replace: true });
+    }
   };
 
   const handleGoogleSuccess = async (credentialResponse) => {
@@ -28,8 +33,12 @@ const Login = () => {
     }
 
     setIsGoogleLoading(true);
-    await loginWithGoogle(credentialResponse.credential);
+    const result = await loginWithGoogle(credentialResponse.credential);
     setIsGoogleLoading(false);
+
+    if (result?.success) {
+      navigate(result.redirectTo || getRoleHomeRoute(result.user?.role), { replace: true });
+    }
   };
 
   const handleGoogleError = () => {
