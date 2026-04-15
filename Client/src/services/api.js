@@ -354,7 +354,7 @@ export const notificationsAPI = {
 
   markAsRead: async (id) => {
     try {
-      const response = await api.post(`/notifications/${id}/read`);
+      const response = await api.patch(`/notifications/${id}/read`);
       return response.data;
     } catch (error) {
       console.error('Mark notification as read error:', error);
@@ -364,7 +364,7 @@ export const notificationsAPI = {
 
   markAllAsRead: async () => {
     try {
-      const response = await api.post('/notifications/read-all');
+      const response = await api.patch('/notifications/read-all');
       return response.data;
     } catch (error) {
       console.error('Mark all notifications as read error:', error);
@@ -378,6 +378,16 @@ export const notificationsAPI = {
       return response.data;
     } catch (error) {
       console.error('Delete notification error:', error);
+      throw error;
+    }
+  },
+
+  create: async (notificationData) => {
+    try {
+      const response = await api.post('/notifications', notificationData);
+      return response.data;
+    } catch (error) {
+      console.error('Create notification error:', error);
       throw error;
     }
   },
