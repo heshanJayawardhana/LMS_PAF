@@ -208,6 +208,16 @@ export const bookingsAPI = {
       throw error;
     }
   },
+
+  delete: async (id) => {
+    try {
+      const response = await api.delete(`/bookings/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Delete booking error:', error);
+      throw error;
+    }
+  },
 };
 
 // Tickets API
