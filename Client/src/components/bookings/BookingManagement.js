@@ -346,32 +346,32 @@ const BookingManagement = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex space-x-2">
-                      <button className="text-navy-600 hover:text-navy-900">
-                        <EyeIcon className="h-4 w-4" />
+                    <div className="flex space-x-3">
+                      <button className="text-navy-600 hover:text-navy-900 p-1 rounded hover:bg-navy-50 transition-colors">
+                        <EyeIcon className="h-6 w-6" />
                       </button>
                       {booking.status === 'PENDING' && (
                         <>
                           <button 
                             onClick={() => handleApprove(booking.id)}
-                            className="text-green-600 hover:text-green-900"
+                            className="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50 transition-colors"
                           >
-                            <CheckCircleIcon className="h-4 w-4" />
+                            <CheckCircleIcon className="h-6 w-6" />
                           </button>
                           <button 
                             onClick={() => handleReject(booking.id)}
-                            className="text-red-600 hover:text-red-900"
+                            className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 transition-colors"
                           >
-                            <XMarkIcon className="h-4 w-4" />
+                            <XMarkIcon className="h-6 w-6" />
                           </button>
                         </>
                       )}
                       {booking.status === 'APPROVED' && (
                         <button 
                           onClick={() => handleCancel(booking.id)}
-                          className="text-gray-600 hover:text-gray-900"
+                          className="text-gray-600 hover:text-gray-900 p-1 rounded hover:bg-gray-50 transition-colors"
                         >
-                          <XMarkIcon className="h-4 w-4" />
+                          <XMarkIcon className="h-6 w-6" />
                         </button>
                       )}
                     </div>
