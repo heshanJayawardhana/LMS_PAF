@@ -47,13 +47,11 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email is already registered");
         }
 
-        UserRole role = request.getRole() != null ? request.getRole() : UserRole.USER;
-
         AppUser user = AppUser.builder()
                 .name(request.getName().trim())
                 .email(normalizedEmail)
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
-                .role(role)
+                .role(UserRole.USER)
                 .department(resolveDepartment(request))
                 .status("ACTIVE")
                 .joinDate(LocalDate.now())

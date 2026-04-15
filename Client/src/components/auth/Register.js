@@ -5,19 +5,12 @@ import { useForm } from 'react-hook-form';
 import { GoogleLogin } from '@react-oauth/google';
 import toast from 'react-hot-toast';
 
-const roleOptions = [
-  { value: 'USER', label: 'Student' },
-  { value: 'ADMIN', label: 'Admin' },
-  { value: 'TECHNICIAN', label: 'Technician' },
-];
-
 const faculties = [
   'Computer Science',
   'Engineering',
   'Business',
   'Science',
   'Arts',
-  'IT Support',
 ];
 
 const academicYears = ['Year 1', 'Year 2', 'Year 3', 'Year 4', 'Postgraduate'];
@@ -28,8 +21,7 @@ const Register = () => {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const navigate = useNavigate();
-  const { register, handleSubmit, watch, setError, formState: { errors } } = useForm();
-  const selectedRole = watch('role') || 'USER';
+  const { register, handleSubmit, setError, formState: { errors } } = useForm();
   const googleClientId = process.env.REACT_APP_GOOGLE_CLIENT_ID || '';
   const googleClientIdConfigured = Boolean(
     googleClientId && !googleClientId.includes('your-google-client-id')
@@ -47,7 +39,7 @@ const Register = () => {
       name: data.name?.trim(),
       email: data.email?.trim().toLowerCase(),
       password: data.password,
-      role: data.role,
+      role: 'USER',
       studentId: data.studentId?.trim(),
       faculty: data.faculty,
       academicYear: data.academicYear,
@@ -105,7 +97,7 @@ const Register = () => {
             Create Account
           </h2>
           <p className="mt-2 text-center text-sm text-navy-600">
-            Register as a student, admin, or technician
+            Register as a student to request bookings and report campus incidents
           </p>
         </div>
         
@@ -182,7 +174,7 @@ const Register = () => {
                 <input
                   {...register('studentId', {
                     validate: (value) => {
-                      if (selectedRole === 'USER' && !value?.trim()) {
+                      if (!value?.trim()) {
                         return 'Student ID is required for students';
                       }
                       return true;
@@ -190,7 +182,7 @@ const Register = () => {
                   })}
                   type="text"
                   className="mt-1 input-field"
-                  placeholder={selectedRole === 'USER' ? 'Enter student ID' : 'Optional'}
+                  placeholder="Enter student ID"
                 />
                 {errors.studentId && (
                   <p className="mt-1 text-sm text-red-600">{errors.studentId.message}</p>
@@ -222,7 +214,7 @@ const Register = () => {
                 <select
                   {...register('academicYear', {
                     validate: (value) => {
-                      if (selectedRole === 'USER' && !value) {
+                      if (!value) {
                         return 'Academic year is required for students';
                       }
                       return true;
@@ -241,21 +233,12 @@ const Register = () => {
               </div>
 
               <div className="md:col-span-1">
-                <label htmlFor="role" className="block text-sm font-medium text-navy-700">
-                  Role
+                <label className="block text-sm font-medium text-navy-700">
+                  Account type
                 </label>
-                <select
-                  {...register('role', { required: 'Role is required' })}
-                  className="mt-1 input-field"
-                  defaultValue="USER"
-                >
-                  {roleOptions.map((role) => (
-                    <option key={role.value} value={role.value}>{role.label}</option>
-                  ))}
-                </select>
-                {errors.role && (
-                  <p className="mt-1 text-sm text-red-600">{errors.role.message}</p>
-                )}
+                <div className="mt-1 input-field bg-navy-50 text-navy-700">
+                  Student
+                </div>
               </div>
 
             </div>
