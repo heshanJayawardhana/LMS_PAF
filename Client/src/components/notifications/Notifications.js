@@ -1,13 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNotifications } from '../../contexts/NotificationContext';
-import { notificationsAPI } from '../../services/mockApi';
 import {
   BellIcon,
   CheckCircleIcon,
-  XMarkIcon,
   CalendarIcon,
   TicketIcon,
-  ChatBubbleLeftIcon,
   ExclamationTriangleIcon,
   InformationCircleIcon,
   TrashIcon,
@@ -18,6 +15,7 @@ const Notifications = () => {
   const { 
     notifications, 
     unreadCount, 
+    loading,
     markAsRead, 
     markAllAsRead, 
     deleteNotification 
@@ -174,7 +172,12 @@ const Notifications = () => {
 
       {/* Notifications List */}
       <div className="space-y-4">
-        {filteredNotifications.length === 0 ? (
+        {loading ? (
+          <div className="text-center py-12">
+            <BellIcon className="mx-auto h-12 w-12 text-navy-400" />
+            <h3 className="mt-2 text-sm font-medium text-navy-900">Loading notifications</h3>
+          </div>
+        ) : filteredNotifications.length === 0 ? (
           <div className="text-center py-12">
             <BellIcon className="mx-auto h-12 w-12 text-navy-400" />
             <h3 className="mt-2 text-sm font-medium text-navy-900">
@@ -250,61 +253,6 @@ const Notifications = () => {
         )}
       </div>
 
-      {/* Notification Settings (Future Enhancement) */}
-      <div className="card p-6">
-        <h3 className="text-lg font-semibold text-navy-900 mb-4">Notification Preferences</h3>
-        <p className="text-sm text-navy-600 mb-4">
-          Customize how you receive notifications (Coming soon)
-        </p>
-        
-        <div className="space-y-4">
-          <label className="flex items-center justify-between">
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                className="h-4 w-4 text-navy-600 focus:ring-navy-500 border-navy-300 rounded"
-                defaultChecked
-                disabled
-              />
-              <span className="ml-3 text-sm text-navy-700">Booking updates</span>
-            </div>
-            <span className="text-xs text-navy-500">Email • In-app</span>
-          </label>
-
-          <label className="flex items-center justify-between">
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                className="h-4 w-4 text-navy-600 focus:ring-navy-500 border-navy-300 rounded"
-                defaultChecked
-                disabled
-              />
-              <span className="ml-3 text-sm text-navy-700">Ticket updates</span>
-            </div>
-            <span className="text-xs text-navy-500">Email • In-app</span>
-          </label>
-
-          <label className="flex items-center justify-between">
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                className="h-4 w-4 text-navy-600 focus:ring-navy-500 border-navy-300 rounded"
-                defaultChecked
-                disabled
-              />
-              <span className="ml-3 text-sm text-navy-700">System alerts</span>
-            </div>
-            <span className="text-xs text-navy-500">In-app only</span>
-          </label>
-        </div>
-
-        <div className="mt-6 p-3 bg-navy-50 rounded-lg">
-          <p className="text-xs text-navy-600">
-            <strong>Note:</strong> Notification preferences will be available in a future update.
-            Currently, all notifications are enabled by default.
-          </p>
-        </div>
-      </div>
     </div>
   );
 };

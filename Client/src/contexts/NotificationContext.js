@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import { notificationsAPI } from '../services/api';
+import { useAuth } from './AuthContext';
 
 const NotificationContext = createContext();
 
@@ -12,45 +14,42 @@ export const useNotifications = () => {
 };
 
 export const NotificationProvider = ({ children }) => {
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Load initial notifications
-    loadNotifications();
-  }, []);
+    if (authLoading) {
+      return;
+    }
+
+    if (isAuthenticated) {
+      loadNotifications();
+    } else {
+      setNotifications([]);
+      setUnreadCount(0);
+    }
+  }, [authLoading, isAuthenticated]);
+
+  const normalizeNotification = (notification) => ({
+    ...notification,
+    isRead: typeof notification.isRead === 'boolean' ? notification.isRead : Boolean(notification.read),
+  });
 
   const loadNotifications = async () => {
+    setLoading(true);
     try {
-      // Mock API call - replace with actual API endpoint
-      const mockNotifications = [
-        {
-          id: 1,
-          message: 'Your booking for Conference Room A has been approved',
-          type: 'booking_approved',
-          isRead: false,
-          createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-        },
-        {
-          id: 2,
-          message: 'New comment on your ticket #123',
-          type: 'ticket_comment',
-          isRead: false,
-          createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-        },
-        {
-          id: 3,
-          message: 'Ticket #124 has been resolved',
-          type: 'ticket_resolved',
-          isRead: true,
-          createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-        },
-      ];
-      
-      setNotifications(mockNotifications);
-      updateUnreadCount(mockNotifications);
+      const response = await notificationsAPI.getAll();
+      const data = response.success ? response.data || [] : [];
+      const normalizedNotifications = data.map(normalizeNotification);
+
+      setNotifications(normalizedNotifications);
+      updateUnreadCount(normalizedNotifications);
     } catch (error) {
       console.error('Failed to load notifications:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -69,28 +68,58 @@ export const NotificationProvider = ({ children }) => {
     toast.success(notification.message);
   };
 
-  const markAsRead = (notificationId) => {
+  const markAsRead = async (notificationId) => {
+    const previousNotifications = notifications;
     setNotifications(prev => 
       prev.map(notif => 
         notif.id === notificationId ? { ...notif, isRead: true } : notif
       )
     );
     setUnreadCount(prev => Math.max(0, prev - 1));
+
+    try {
+      await notificationsAPI.markAsRead(notificationId);
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+      setNotifications(previousNotifications);
+      updateUnreadCount(previousNotifications);
+      toast.error('Failed to update notification');
+    }
   };
 
-  const markAllAsRead = () => {
+  const markAllAsRead = async () => {
+    const previousNotifications = notifications;
     setNotifications(prev => 
       prev.map(notif => ({ ...notif, isRead: true }))
     );
     setUnreadCount(0);
+
+    try {
+      await notificationsAPI.markAllAsRead();
+    } catch (error) {
+      console.error('Failed to mark all notifications as read:', error);
+      setNotifications(previousNotifications);
+      updateUnreadCount(previousNotifications);
+      toast.error('Failed to update notifications');
+    }
   };
 
-  const deleteNotification = (notificationId) => {
+  const deleteNotification = async (notificationId) => {
+    const previousNotifications = notifications;
     setNotifications(prev => {
       const updated = prev.filter(notif => notif.id !== notificationId);
       updateUnreadCount(updated);
       return updated;
     });
+
+    try {
+      await notificationsAPI.delete(notificationId);
+    } catch (error) {
+      console.error('Failed to delete notification:', error);
+      setNotifications(previousNotifications);
+      updateUnreadCount(previousNotifications);
+      toast.error('Failed to delete notification');
+    }
   };
 
   const updateUnreadCount = (notificationList) => {
@@ -101,6 +130,7 @@ export const NotificationProvider = ({ children }) => {
   const value = {
     notifications,
     unreadCount,
+    loading,
     addNotification,
     markAsRead,
     markAllAsRead,
