@@ -89,6 +89,40 @@ public class BookingController {
         }
     }
     
+    @PutMapping("/{id}")
+    public ApiResponse<Map<String, Object>> updateBooking(@PathVariable String id, @Valid @RequestBody CreateBookingRequest request) {
+        try {
+            Booking booking = Booking.builder()
+                .userId(request.getUserId())
+                .resourceId(request.getResource())
+                .date(request.getDate())
+                .startTime(request.getStartTime())
+                .endTime(request.getEndTime())
+                .purpose(request.getPurpose())
+                .attendees(request.getAttendees())
+                .requestedBy(request.getRequestedBy())
+                .build();
+            
+            // First check if booking exists
+            Booking existingBooking = bookingService.getById(id);
+            if (existingBooking == null) {
+                return new ApiResponse<>(false, null, "Booking not found");
+            }
+            
+            // Update the booking by creating a new one with same ID
+            booking.setId(id);
+            booking.setStatus(existingBooking.getStatus());
+            booking.setCreatedAt(existingBooking.getCreatedAt());
+            
+            Booking updatedBooking = bookingService.update(booking);
+            Map<String, Object> response = convertToResponse(updatedBooking);
+            
+            return new ApiResponse<>(true, response, "Booking updated successfully");
+        } catch (RuntimeException e) {
+            return new ApiResponse<>(false, null, e.getMessage());
+        }
+    }
+    
     @PutMapping("/{id}/approve")
     public ApiResponse<Map<String, Object>> approveBooking(@PathVariable String id) {
         try {

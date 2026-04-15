@@ -124,6 +124,36 @@ public class BookingService {
         return bookingRepository.save(booking);
     }
     
+    public Booking update(Booking booking) {
+        // Check for conflicting bookings (excluding the current booking)
+        List<Booking> conflictingBookings = bookingRepository.findByResourceIdAndDateAndStatusNot(
+            booking.getResourceId(), 
+            booking.getDate(), 
+            BookingStatus.CANCELLED
+        );
+        
+        // Check time conflicts (excluding current booking)
+        for (Booking existing : conflictingBookings) {
+            if (!existing.getId().equals(booking.getId()) && 
+                isTimeConflict(booking.getStartTime(), booking.getEndTime(), 
+                               existing.getStartTime(), existing.getEndTime())) {
+                throw new RuntimeException("Time slot conflicts with existing booking");
+            }
+        }
+        
+        // Validate facility exists and is active
+        Facility facility = facilityService.getById(booking.getResourceId());
+        if (facility == null) {
+            throw new RuntimeException("Facility not found");
+        }
+        
+        if (facility.getStatus() != com.example.server.facility.FacilityStatus.ACTIVE) {
+            throw new RuntimeException("Facility is not available for booking");
+        }
+        
+        return bookingRepository.save(booking);
+    }
+    
     public void delete(String id) {
         if (!bookingRepository.existsById(id)) {
             throw new RuntimeException("Booking not found");
