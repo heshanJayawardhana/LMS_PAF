@@ -126,16 +126,16 @@ const LandingPage = () => {
               Modernize your campus operations with our comprehensive facility and asset management platform. 
               Streamline bookings, track maintenance, and enhance campus experience.
             </p>
-            <div className="mt-10 flex justify-center space-x-4">
+            <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
               <Link
                 to="/register"
-                className="btn-primary bg-white text-navy-700 hover:bg-navy-50 px-8 py-3 text-lg"
+                className="inline-flex min-w-[232px] items-center justify-center rounded-lg bg-white px-8 py-3 text-lg font-medium text-navy-700 shadow-navy transition-colors duration-200 hover:bg-navy-50"
               >
                 Get Started Free
               </Link>
               <Link
                 to="/login"
-                className="btn-secondary border-2 border-white text-white hover:bg-white hover:text-navy-700 px-8 py-3 text-lg"
+                className="inline-flex min-w-[144px] items-center justify-center rounded-lg border-2 border-white bg-transparent px-8 py-3 text-lg font-medium text-white transition-colors duration-200 hover:bg-white hover:text-navy-700"
               >
                 Sign In
               </Link>
