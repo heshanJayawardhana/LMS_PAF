@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNotifications } from '../../contexts/NotificationContext';
-import { bookingsAPI } from '../../services/mockApi';
+import { bookingsAPI, facilitiesAPI } from '../../services/api';
 import {
   CalendarIcon,
   MagnifyingGlassIcon,
@@ -20,14 +20,28 @@ const BookingManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [bookings, setBookings] = useState([]);
+  const [facilities, setFacilities] = useState([]);
   const [loading, setLoading] = useState(false);
   const { register, handleSubmit, formState: { errors }, reset } = useForm();
 
   useEffect(() => {
     loadBookings();
+    loadFacilities();
   }, [searchTerm, filterStatus]);
+
+  const loadFacilities = async () => {
+    try {
+      const response = await facilitiesAPI.getAll();
+      if (response.success) {
+        setFacilities(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to load facilities:', error);
+    }
+  };
 
   const loadBookings = async () => {
     setLoading(true);
@@ -169,17 +183,17 @@ const BookingManagement = () => {
   };
 
   const statuses = ['all', 'PENDING', 'APPROVED', 'REJECTED', 'CANCELLED', 'IN_PROGRESS', 'OPEN', 'RESOLVED'];
-  const resources = [
-    'Conference Room A',
-    'Computer Lab 301',
-    'Meeting Room B',
-    'Lecture Hall B',
-    'Physics Lab 201',
-  ];
 
   const handleCreateBooking = async (data) => {
     try {
-      const response = await bookingsAPI.create(data);
+      // Add required fields for backend
+      const bookingData = {
+        ...data,
+        userId: '2', // Mock user ID
+        requestedBy: 'Regular User' // Mock requested by
+      };
+      
+      const response = await bookingsAPI.create(bookingData);
       if (response.success) {
         loadBookings(); // Reload bookings
         setShowCreateModal(false);
@@ -240,6 +254,44 @@ const BookingManagement = () => {
       }
     } catch (error) {
       console.error('Failed to cancel booking:', error);
+    }
+  };
+
+  const handleDelete = async (bookingId) => {
+    if (window.confirm('Are you sure you want to delete this booking?')) {
+      try {
+        const response = await bookingsAPI.delete(bookingId);
+        if (response.success) {
+          loadBookings(); // Reload bookings
+        }
+      } catch (error) {
+        console.error('Failed to delete booking:', error);
+      }
+    }
+  };
+
+  const handleEdit = (booking) => {
+    setSelectedBooking(booking);
+    setShowEditModal(true);
+  };
+
+  const handleUpdateBooking = async (data) => {
+    try {
+      const bookingData = {
+        ...data,
+        userId: selectedBooking.userId || '2',
+        requestedBy: selectedBooking.requestedBy || 'Regular User'
+      };
+      
+      const response = await bookingsAPI.update(selectedBooking.id, bookingData);
+      if (response.success) {
+        loadBookings(); // Reload bookings
+        setShowEditModal(false);
+        setSelectedBooking(null);
+        reset();
+      }
+    } catch (error) {
+      console.error('Failed to update booking:', error);
     }
   };
 
@@ -356,31 +408,43 @@ const BookingManagement = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2">
-                      <button className="text-navy-600 hover:text-navy-900">
-                        <EyeIcon className="h-4 w-4" />
+                      <button className="text-navy-600 hover:text-navy-900 p-1 rounded hover:bg-navy-50 transition-colors">
+                        <EyeIcon className="h-6 w-6" />
+                      </button>
+                      <button 
+                        onClick={() => handleEdit(booking)}
+                        className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50 transition-colors"
+                      >
+                        <PencilIcon className="h-6 w-6" />
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(booking.id)}
+                        className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 transition-colors"
+                      >
+                        <TrashIcon className="h-6 w-6" />
                       </button>
                       {booking.status === 'PENDING' && (
                         <>
                           <button 
                             onClick={() => handleApprove(booking.id)}
-                            className="text-green-600 hover:text-green-900"
+                            className="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50 transition-colors"
                           >
-                            <CheckCircleIcon className="h-4 w-4" />
+                            <CheckCircleIcon className="h-6 w-6" />
                           </button>
                           <button 
                             onClick={() => handleReject(booking.id)}
-                            className="text-red-600 hover:text-red-900"
+                            className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 transition-colors"
                           >
-                            <XMarkIcon className="h-4 w-4" />
+                            <XMarkIcon className="h-6 w-6" />
                           </button>
                         </>
                       )}
                       {booking.status === 'APPROVED' && (
                         <button 
                           onClick={() => handleCancel(booking.id)}
-                          className="text-gray-600 hover:text-gray-900"
+                          className="text-gray-600 hover:text-gray-900 p-1 rounded hover:bg-gray-50 transition-colors"
                         >
-                          <XMarkIcon className="h-4 w-4" />
+                          <XMarkIcon className="h-6 w-6" />
                         </button>
                       )}
                     </div>
@@ -420,8 +484,8 @@ const BookingManagement = () => {
                     className="input-field"
                   >
                     <option value="">Select a resource</option>
-                    {resources.map(resource => (
-                      <option key={resource} value={resource}>{resource}</option>
+                    {facilities.map(facility => (
+                      <option key={facility.id} value={facility.id}>{facility.name}</option>
                     ))}
                   </select>
                   {errors.resource && (
@@ -521,6 +585,139 @@ const BookingManagement = () => {
                     className="btn-primary"
                   >
                     Create Booking
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>)}
+      )}
+
+      {/* Edit Booking Modal */}
+      {showEditModal && selectedBooking && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-lg bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-semibold text-navy-900 mb-4">Edit Booking</h3>
+              
+              <form onSubmit={handleSubmit(handleUpdateBooking)} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-navy-700 mb-1">
+                    Resource
+                  </label>
+                  <select
+                    {...register('resource', { required: 'Resource is required' })}
+                    className="input-field"
+                    defaultValue={selectedBooking.resourceId}
+                  >
+                    <option value="">Select a resource</option>
+                    {facilities.map(facility => (
+                      <option key={facility.id} value={facility.id}>{facility.name}</option>
+                    ))}
+                  </select>
+                  {errors.resource && (
+                    <p className="mt-1 text-sm text-red-600">{errors.resource.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-navy-700 mb-1">
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    {...register('date', { required: 'Date is required' })}
+                    className="input-field"
+                    defaultValue={selectedBooking.date}
+                  />
+                  {errors.date && (
+                    <p className="mt-1 text-sm text-red-600">{errors.date.message}</p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-navy-700 mb-1">
+                      Start Time
+                    </label>
+                    <input
+                      type="time"
+                      {...register('startTime', { required: 'Start time is required' })}
+                      className="input-field"
+                      defaultValue={selectedBooking.startTime}
+                    />
+                    {errors.startTime && (
+                      <p className="mt-1 text-sm text-red-600">{errors.startTime.message}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-navy-700 mb-1">
+                      End Time
+                    </label>
+                    <input
+                      type="time"
+                      {...register('endTime', { required: 'End time is required' })}
+                      className="input-field"
+                      defaultValue={selectedBooking.endTime}
+                    />
+                    {errors.endTime && (
+                      <p className="mt-1 text-sm text-red-600">{errors.endTime.message}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-navy-700 mb-1">
+                    Purpose
+                  </label>
+                  <textarea
+                    {...register('purpose', { required: 'Purpose is required' })}
+                    rows={3}
+                    className="input-field"
+                    defaultValue={selectedBooking.purpose}
+                    placeholder="Describe the purpose of this booking"
+                  />
+                  {errors.purpose && (
+                    <p className="mt-1 text-sm text-red-600">{errors.purpose.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-navy-700 mb-1">
+                    Number of Attendees
+                  </label>
+                  <input
+                    type="number"
+                    {...register('attendees', { 
+                      required: 'Number of attendees is required',
+                      min: { value: 1, message: 'Must be at least 1' }
+                    })}
+                    className="input-field"
+                    defaultValue={selectedBooking.attendees}
+                    placeholder="Expected number of attendees"
+                  />
+                  {errors.attendees && (
+                    <p className="mt-1 text-sm text-red-600">{errors.attendees.message}</p>
+                  )}
+                </div>
+
+                <div className="flex justify-end space-x-2 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowEditModal(false);
+                      setSelectedBooking(null);
+                      reset();
+                    }}
+                    className="btn-secondary"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn-primary"
+                  >
+                    Update Booking
                   </button>
                 </div>
               </form>
