@@ -94,10 +94,10 @@ const Register = () => {
             </svg>
           </div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-navy-900">
-            Create Account
+            Create Your Student Account
           </h2>
           <p className="mt-2 text-center text-sm text-navy-600">
-            Register as a student to request bookings and report campus incidents
+            Register to request bookings, report incidents, and receive campus updates
           </p>
         </div>
         
@@ -249,7 +249,7 @@ const Register = () => {
                 disabled={isLoading}
                 className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isLoading ? 'Creating account...' : 'Create user'}
+                {isLoading ? 'Creating account...' : 'Create account'}
               </button>
             </div>
 
@@ -282,6 +282,12 @@ const Register = () => {
                   )}
                 </div>
               </div>
+            </div>
+          )}
+
+          {!googleClientIdConfigured && (
+            <div className="mt-6 rounded-lg border border-navy-200 bg-navy-50 px-4 py-3 text-sm text-navy-700">
+              Google Sign-In is not configured for this environment yet.
             </div>
           )}
 

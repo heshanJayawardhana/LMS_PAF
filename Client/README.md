@@ -158,8 +158,48 @@ Create a `.env` file in the root directory:
 
 ```env
 REACT_APP_API_BASE_URL=http://localhost:8080/api
-REACT_APP_GOOGLE_CLIENT_ID=your-google-client-id
+REACT_APP_GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
 ```
+
+### Google Sign-In Setup
+
+This project uses the Google Identity Services sign-in button on the React client and verifies the returned ID token in Spring Boot.
+
+1. Create a Google Cloud project.
+2. Open `APIs & Services` -> `Credentials`.
+3. Create an `OAuth 2.0 Client ID` for a `Web application`.
+4. Add this Authorized JavaScript Origin for local development:
+
+```text
+http://localhost:3000
+```
+
+5. Copy the generated client ID and place it in the client `.env`:
+
+```env
+REACT_APP_GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
+```
+
+6. Start the backend with the same client ID in the `GOOGLE_CLIENT_ID` environment variable:
+
+```powershell
+$env:GOOGLE_CLIENT_ID="your-google-client-id.apps.googleusercontent.com"
+cd E:\Y3S1\PAF\PAF_Project\LMS_PAF\server\server
+.\mvnw.cmd spring-boot:run
+```
+
+7. Start the frontend:
+
+```powershell
+cd E:\Y3S1\PAF\PAF_Project\LMS_PAF\Client
+npm start
+```
+
+Important notes:
+
+- The same Google client ID must be used on both client and backend.
+- Google login is not plain email entry; it must go through the Google sign-in button so Google can verify email ownership.
+- When a user signs in with Google for the first time, this backend creates a local account automatically with role `USER`.
 
 ## 🧪 Testing
 

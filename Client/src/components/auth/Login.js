@@ -60,10 +60,10 @@ const Login = () => {
             </svg>
           </div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-navy-900">
-            Smart Campus Hub
+            SmartEdu Portal
           </h2>
           <p className="mt-2 text-center text-sm text-navy-600">
-            Sign in to your account
+            Sign in to continue to your campus services
           </p>
         </div>
         
@@ -149,6 +149,12 @@ const Login = () => {
             </div>
           )}
 
+          {!googleClientIdConfigured && (
+            <div className="mt-6 rounded-lg border border-navy-200 bg-navy-50 px-4 py-3 text-sm text-navy-700">
+              Google Sign-In is not configured for this environment yet.
+            </div>
+          )}
+
           <div className="mt-6 text-center">
             <p className="text-sm text-navy-600">
               Don't have an account?{' '}
@@ -159,8 +165,8 @@ const Login = () => {
           </div>
 
           <div className="mt-4 text-xs text-navy-500">
-            <p className="font-semibold mb-2">Account Tip:</p>
-            <p>Use an account you created from the Sign up page, then sign in here.</p>
+            <p className="font-semibold mb-2">Sign-In Tip</p>
+            <p>Use your registered campus account or continue with Google when it is configured.</p>
           </div>
         </div>
       </div>
