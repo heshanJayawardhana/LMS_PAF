@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { useAuth } from '../../contexts/AuthContext';
+import { useNotifications } from '../../contexts/NotificationContext';
 import { ticketsAPI } from '../../services/mockApi';
 import {
   TicketIcon,
@@ -18,11 +20,15 @@ import {
 } from '@heroicons/react/24/outline';
 
 const TicketManagement = () => {
+  const { user } = useAuth();
+  const { createNotification } = useNotifications();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterPriority, setFilterPriority] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
+  const [commentText, setCommentText] = useState('');
+  const [commentSubmitting, setCommentSubmitting] = useState(false);
   const [attachments, setAttachments] = useState([]);
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -143,7 +149,16 @@ const TicketManagement = () => {
     },
   ];
 
-  const displayTickets = tickets.length > 0 ? tickets : mockTickets;
+  const displayTickets = (tickets.length > 0 ? tickets : mockTickets).map((ticket) => ({
+    ...ticket,
+    resource: ticket.resource || ticket.resourceName || 'Unknown resource',
+    location: ticket.location || ticket.resourceLocation || 'Unknown location',
+    assignedTo: ticket.assignedToName || ticket.assignedTo || null,
+    requestedByEmail: ticket.requestedByEmail || ticket.email || null,
+    comments: ticket.comments || [],
+    attachments: ticket.attachments || [],
+    updatedAt: ticket.updatedAt || ticket.createdAt,
+  }));
   const filteredTickets = displayTickets.filter(ticket => {
     const matchesSearch = ticket.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          ticket.resource.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -226,6 +241,16 @@ const TicketManagement = () => {
     try {
       const response = await ticketsAPI.updateStatus(ticketId, newStatus);
       if (response.success) {
+        const ticket = filteredTickets.find((item) => item.id === ticketId);
+        if (ticket?.requestedByEmail) {
+          await createNotification({
+            recipientEmail: ticket.requestedByEmail,
+            message: `Ticket #${ticketId} status changed to ${newStatus}.`,
+            type: newStatus === 'RESOLVED' ? 'ticket_resolved' : 'ticket_status_changed',
+            relatedType: 'TICKET',
+            relatedId: String(ticketId),
+          });
+        }
         loadTickets(); // Reload tickets
       }
     } catch (error) {
@@ -237,6 +262,16 @@ const TicketManagement = () => {
     try {
       const response = await ticketsAPI.assign(ticketId, assignee);
       if (response.success) {
+        const ticket = filteredTickets.find((item) => item.id === ticketId);
+        if (ticket?.requestedByEmail) {
+          await createNotification({
+            recipientEmail: ticket.requestedByEmail,
+            message: `Ticket #${ticketId} has been assigned to a technician.`,
+            type: 'ticket_assigned',
+            relatedType: 'TICKET',
+            relatedId: String(ticketId),
+          });
+        }
         loadTickets(); // Reload tickets
       }
     } catch (error) {
@@ -251,6 +286,104 @@ const TicketManagement = () => {
       return;
     }
     setAttachments(files);
+  };
+
+  const openCommentModal = (ticket) => {
+    setSelectedTicket(ticket);
+    setCommentText('');
+  };
+
+  const closeCommentModal = () => {
+    if (commentSubmitting) {
+      return;
+    }
+
+    setSelectedTicket(null);
+    setCommentText('');
+  };
+
+  const handleAddComment = async () => {
+    if (!selectedTicket || !commentText.trim()) {
+      return;
+    }
+
+    setCommentSubmitting(true);
+    try {
+      const response = await ticketsAPI.addComment(selectedTicket.id, commentText.trim());
+      if (response.success) {
+        const recipientEmail =
+          user?.email === selectedTicket.requestedByEmail
+            ? selectedTicket.assignedToEmail
+            : selectedTicket.requestedByEmail;
+
+        if (recipientEmail) {
+          await createNotification({
+            recipientEmail,
+            message: `New comment on ticket #${selectedTicket.id}.`,
+            type: 'ticket_comment',
+            relatedType: 'TICKET',
+            relatedId: String(selectedTicket.id),
+          });
+        }
+
+        closeCommentModal();
+        loadTickets();
+      }
+    } catch (error) {
+      console.error('Failed to add comment:', error);
+    } finally {
+      setCommentSubmitting(false);
+    }
+  };
+
+  const getTicketActions = (ticket) => {
+    const actions = [
+      {
+        key: 'view',
+        label: 'View',
+        icon: EyeIcon,
+        className: 'border border-navy-200 bg-white text-navy-700 hover:border-navy-300 hover:bg-navy-50',
+      },
+      {
+        key: 'comment',
+        label: 'Comment',
+        icon: ChatBubbleLeftIcon,
+        onClick: () => openCommentModal(ticket),
+        className: 'bg-navy-900 text-white hover:bg-navy-800',
+      },
+    ];
+
+    if (user?.role === 'TECHNICIAN' && !ticket.assignedTo) {
+      actions.push({
+        key: 'assign',
+        label: 'Assign Me',
+        icon: UserIcon,
+        onClick: () => handleAssignTicket(ticket.id, 3),
+        className: 'border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100',
+      });
+    }
+
+    if ((user?.role === 'TECHNICIAN' || user?.role === 'ADMIN') && ticket.status === 'OPEN') {
+      actions.push({
+        key: 'start',
+        label: 'Start Work',
+        icon: ClockIcon,
+        onClick: () => handleStatusUpdate(ticket.id, 'IN_PROGRESS'),
+        className: 'border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100',
+      });
+    }
+
+    if ((user?.role === 'TECHNICIAN' || user?.role === 'ADMIN') && ticket.status === 'IN_PROGRESS') {
+      actions.push({
+        key: 'resolve',
+        label: 'Resolve',
+        icon: CheckCircleIcon,
+        onClick: () => handleStatusUpdate(ticket.id, 'RESOLVED'),
+        className: 'border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100',
+      });
+    }
+
+    return actions;
   };
 
   return (
@@ -319,7 +452,7 @@ const TicketManagement = () => {
       {/* Results Summary */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-navy-600">
-          Showing {filteredTickets.length} of {tickets.length} tickets
+          Showing {filteredTickets.length} of {displayTickets.length} tickets
         </p>
       </div>
 
@@ -395,15 +528,32 @@ const TicketManagement = () => {
               </div>
             </div>
 
-            <div className="mt-6 flex space-x-2">
-              <button className="flex-1 btn-secondary flex items-center justify-center space-x-1">
-                <EyeIcon className="h-4 w-4" />
-                <span>View</span>
-              </button>
-              <button className="flex-1 btn-primary flex items-center justify-center space-x-1">
-                <ChatBubbleLeftIcon className="h-4 w-4" />
-                <span>Comment</span>
-              </button>
+            <div className="mt-6 border-t border-navy-100 pt-4">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-wide text-navy-500">
+                  Workflow Actions
+                </span>
+                <span className="text-xs text-navy-400">
+                  {getTicketActions(ticket).length} available
+                </span>
+              </div>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {getTicketActions(ticket).map((action) => {
+                  const Icon = action.icon;
+
+                  return (
+                    <button
+                      key={action.key}
+                      type="button"
+                      onClick={action.onClick}
+                      className={`inline-flex min-h-[42px] items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${action.className}`}
+                    >
+                      <Icon className="h-4 w-4 shrink-0" />
+                      <span>{action.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         ))}
@@ -417,6 +567,66 @@ const TicketManagement = () => {
           <p className="mt-1 text-sm text-navy-500">
             Try adjusting your search or filters
           </p>
+        </div>
+      )}
+
+      {selectedTicket && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-gray-600 bg-opacity-50">
+          <div className="relative top-16 mx-auto w-full max-w-lg rounded-lg bg-white p-6 shadow-lg">
+            <div className="mb-4 flex items-start justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-navy-900">
+                  Add Comment to Ticket #{selectedTicket.id}
+                </h3>
+                <p className="mt-1 text-sm text-navy-600">
+                  Share an update for {selectedTicket.resource} and notify the relevant user.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeCommentModal}
+                className="rounded-md p-1 text-navy-400 transition-colors hover:bg-navy-50 hover:text-navy-700"
+              >
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="mb-4 rounded-lg border border-navy-100 bg-navy-50 p-3 text-sm text-navy-700">
+              <p className="font-medium text-navy-900">{selectedTicket.category}</p>
+              <p className="mt-1">{selectedTicket.description}</p>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-navy-700">
+                Comment
+              </label>
+              <textarea
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                rows={4}
+                placeholder="Add a useful update, request, or resolution note..."
+                className="input-field min-h-[120px] resize-none"
+              />
+            </div>
+
+            <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={closeCommentModal}
+                className="inline-flex min-h-[42px] items-center justify-center rounded-lg border border-navy-200 px-4 py-2 text-sm font-medium text-navy-700 transition-colors hover:bg-navy-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleAddComment}
+                disabled={!commentText.trim() || commentSubmitting}
+                className="inline-flex min-h-[42px] items-center justify-center rounded-lg bg-navy-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-navy-800 disabled:cursor-not-allowed disabled:bg-navy-300"
+              >
+                {commentSubmitting ? 'Sending...' : 'Post Comment'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

@@ -14,7 +14,7 @@ export const useNotifications = () => {
 };
 
 export const NotificationProvider = ({ children }) => {
-  const { isAuthenticated, loading: authLoading } = useAuth();
+  const { isAuthenticated, loading: authLoading, user } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -66,6 +66,23 @@ export const NotificationProvider = ({ children }) => {
     
     // Show toast notification
     toast.success(notification.message);
+  };
+
+  const createNotification = async (notification) => {
+    try {
+      const response = await notificationsAPI.create(notification);
+      const createdNotification = response.success ? normalizeNotification(response.data) : null;
+
+      if (createdNotification && createdNotification.userId === user?.id) {
+        setNotifications(prev => [createdNotification, ...prev]);
+        setUnreadCount(prev => prev + 1);
+      }
+
+      return { success: true, data: createdNotification };
+    } catch (error) {
+      console.error('Failed to create notification:', error);
+      return { success: false, message: 'Failed to create notification' };
+    }
   };
 
   const markAsRead = async (notificationId) => {
@@ -132,6 +149,7 @@ export const NotificationProvider = ({ children }) => {
     unreadCount,
     loading,
     addNotification,
+    createNotification,
     markAsRead,
     markAllAsRead,
     deleteNotification,
