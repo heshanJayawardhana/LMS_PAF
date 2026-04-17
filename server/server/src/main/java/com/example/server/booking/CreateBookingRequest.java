@@ -28,9 +28,7 @@ public class CreateBookingRequest {
     @Min(value = 1, message = "Must be at least 1 attendee")
     private int attendees;
     
-    @NotBlank(message = "User ID is required")
     private String userId;
     
-    @NotBlank(message = "Requested by is required")
     private String requestedBy;
 }

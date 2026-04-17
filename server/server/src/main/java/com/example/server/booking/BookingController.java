@@ -1,5 +1,8 @@
 package com.example.server.booking;
 
+import com.example.server.auth.AppUser;
+import com.example.server.auth.UserRepository;
+import com.example.server.auth.UserRole;
 import com.example.server.common.ApiResponse;
 import com.example.server.facility.Facility;
 import com.example.server.facility.FacilityService;
@@ -10,6 +13,7 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 //import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/bookings")
@@ -28,12 +33,15 @@ public class BookingController {
     
     private final BookingService bookingService;
     private final FacilityService facilityService;
+    private final UserRepository userRepository;
     
     @GetMapping
     public ApiResponse<List<Map<String, Object>>> getAllBookings(
+            Authentication authentication,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String status
     ) {
+        AppUser currentUser = getCurrentUser(authentication);
         BookingStatus bookingStatus = null;
         if (status != null && !status.equals("all")) {
             try {
@@ -44,7 +52,9 @@ public class BookingController {
             }
         }
         
-        List<Booking> bookings = bookingService.getAll(search, bookingStatus);
+        List<Booking> bookings = currentUser.getRole() == UserRole.ADMIN
+                ? bookingService.getAll(search, bookingStatus)
+                : bookingService.getForUser(currentUser.getId(), search, bookingStatus);
         
         // Convert to response format with resource details
         List<Map<String, Object>> response = bookings.stream()
@@ -55,11 +65,13 @@ public class BookingController {
     }
     
     @GetMapping("/{id}")
-    public ApiResponse<Map<String, Object>> getBookingById(@PathVariable String id) {
+    public ApiResponse<Map<String, Object>> getBookingById(Authentication authentication, @PathVariable String id) {
         Booking booking = bookingService.getById(id);
         if (booking == null) {
             return new ApiResponse<>(false, null, "Booking not found");
         }
+
+        ensureBookingAccess(authentication, booking);
         
         Map<String, Object> response = convertToResponse(booking);
         return new ApiResponse<>(true, response, null);
@@ -67,17 +79,21 @@ public class BookingController {
     
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ApiResponse<Map<String, Object>> createBooking(@Valid @RequestBody CreateBookingRequest request) {
+    public ApiResponse<Map<String, Object>> createBooking(
+            Authentication authentication,
+            @Valid @RequestBody CreateBookingRequest request
+    ) {
         try {
+            AppUser currentUser = getCurrentUser(authentication);
             Booking booking = Booking.builder()
-                .userId(request.getUserId())
+                .userId(currentUser.getId())
                 .resourceId(request.getResource())
                 .date(request.getDate())
                 .startTime(request.getStartTime())
                 .endTime(request.getEndTime())
                 .purpose(request.getPurpose())
                 .attendees(request.getAttendees())
-                .requestedBy(request.getRequestedBy())
+                .requestedBy(currentUser.getName())
                 .build();
             
             Booking createdBooking = bookingService.create(booking);
@@ -90,26 +106,30 @@ public class BookingController {
     }
     
     @PutMapping("/{id}")
-    public ApiResponse<Map<String, Object>> updateBooking(@PathVariable String id, @Valid @RequestBody CreateBookingRequest request) {
+    public ApiResponse<Map<String, Object>> updateBooking(
+            Authentication authentication,
+            @PathVariable String id,
+            @Valid @RequestBody CreateBookingRequest request
+    ) {
         try {
+            Booking existingBooking = bookingService.getById(id);
+            if (existingBooking == null) {
+                return new ApiResponse<>(false, null, "Booking not found");
+            }
+
+            ensureBookingAccess(authentication, existingBooking);
+
             Booking booking = Booking.builder()
-                .userId(request.getUserId())
+                .userId(existingBooking.getUserId())
                 .resourceId(request.getResource())
                 .date(request.getDate())
                 .startTime(request.getStartTime())
                 .endTime(request.getEndTime())
                 .purpose(request.getPurpose())
                 .attendees(request.getAttendees())
-                .requestedBy(request.getRequestedBy())
+                .requestedBy(existingBooking.getRequestedBy())
                 .build();
             
-            // First check if booking exists
-            Booking existingBooking = bookingService.getById(id);
-            if (existingBooking == null) {
-                return new ApiResponse<>(false, null, "Booking not found");
-            }
-            
-            // Update the booking by creating a new one with same ID
             booking.setId(id);
             booking.setStatus(existingBooking.getStatus());
             booking.setCreatedAt(existingBooking.getCreatedAt());
@@ -149,8 +169,15 @@ public class BookingController {
     }
     
     @PutMapping("/{id}/cancel")
-    public ApiResponse<Map<String, Object>> cancelBooking(@PathVariable String id) {
+    public ApiResponse<Map<String, Object>> cancelBooking(Authentication authentication, @PathVariable String id) {
         try {
+            Booking existingBooking = bookingService.getById(id);
+            if (existingBooking == null) {
+                return new ApiResponse<>(false, null, "Booking not found");
+            }
+
+            ensureBookingAccess(authentication, existingBooking);
+
             Booking booking = bookingService.cancel(id);
             Map<String, Object> response = convertToResponse(booking);
             return new ApiResponse<>(true, response, "Booking cancelled successfully");
@@ -166,6 +193,26 @@ public class BookingController {
             return new ApiResponse<>(true, null, "Booking deleted successfully");
         } catch (RuntimeException e) {
             return new ApiResponse<>(false, null, e.getMessage());
+        }
+    }
+
+    private AppUser getCurrentUser(Authentication authentication) {
+        if (authentication == null || authentication.getName() == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication is required");
+        }
+
+        return userRepository.findByEmailIgnoreCase(authentication.getName())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+    }
+
+    private void ensureBookingAccess(Authentication authentication, Booking booking) {
+        AppUser currentUser = getCurrentUser(authentication);
+        if (currentUser.getRole() == UserRole.ADMIN) {
+            return;
+        }
+
+        if (!currentUser.getId().equals(booking.getUserId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You do not have access to this booking");
         }
     }
     

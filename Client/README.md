@@ -1,305 +1,137 @@
-# Smart Campus Operations Hub
+# SmartEdu Portal Client
 
-A comprehensive web application for managing university facilities, bookings, and maintenance tickets. Built with React and Spring Boot REST API.
+React frontend for the Smart Campus Operations Hub assignment.
 
-## 🎨 Design Theme
+## Authentication Coverage
 
-The application features a professional **Navy Blue + White** color scheme:
-- Primary Navy: `#1a365d` (deep navy)
-- Secondary Navy: `#4a6fa5` (medium navy)
-- Accent Navy: `#627d98` (light navy)
-- Clean White backgrounds for readability
-- Consistent shadow effects for depth
+This project includes the authentication pieces required by the assignment:
 
-## 🚀 Features
+- Email/password registration and login
+- Google OAuth 2.0 sign-in flow
+- JWT-based authentication for API requests
+- Role-aware routing for `USER`, `ADMIN`, and `TECHNICIAN`
+- Session restoration with `/api/auth/me`
+- Automatic logout when the token is invalid or expired
 
-### Core Modules
+## How Authentication Works
 
-#### 🏢 Facilities & Assets Catalogue
-- Browse and search campus facilities (rooms, labs, equipment)
-- Filter by type, capacity, location, and status
-- Detailed resource information with amenities
-- Real-time availability status
+### 1. Login methods
 
-#### 📅 Booking Management
-- Create and manage facility bookings
-- Workflow: PENDING → APPROVED/REJECTED → CANCELLED
-- Conflict prevention for overlapping bookings
-- Admin approval system with reasons
-- Booking history and status tracking
+- Standard login sends credentials to `POST /api/auth/login`
+- Google sign-in sends the Google ID token to `POST /api/auth/google`
+- Registration sends student signup data to `POST /api/auth/register`
 
-#### 🎫 Maintenance & Incident Ticketing
-- Create incident tickets for equipment/facility issues
-- Upload up to 3 image attachments per ticket
-- Ticket workflow: OPEN → IN_PROGRESS → RESOLVED → CLOSED
-- Technician assignment and status updates
-- Comment system for ticket collaboration
+### 2. Token handling
 
-#### 🔔 Notifications
-- Real-time notifications for booking updates
-- Ticket status change alerts
-- Comment notifications
-- Centralized notification panel
-- Read/unread status management
+- The backend issues a signed JWT after successful login
+- The client stores the JWT and attaches it as `Authorization: Bearer <token>`
+- The backend validates the token on each protected request
 
-#### 👤 Authentication & Authorization
-- OAuth 2.0 integration (Google Sign-In ready)
-- Role-based access control: USER, ADMIN, TECHNICIAN
-- Secure session management
-- Profile management
+### 3. Session management
 
-#### 📊 Admin Dashboard
-- System overview with key metrics
-- User management and role assignment
-- Facility utilization analytics
-- Department statistics
-- System health monitoring
+- Spring Security is configured as `STATELESS`
+- When the app reloads, the client calls `GET /api/auth/me`
+- If the token is valid, the session is restored
+- If the token is missing, invalid, or expired, the client clears auth state and returns to `/login`
 
-## 🛠️ Technology Stack
+### 4. Role handling
 
-### Frontend
-- **React 18** - Modern UI framework
-- **React Router 6** - Client-side routing
-- **Tailwind CSS** - Utility-first CSS framework
-- **Heroicons** - Beautiful icon library
-- **React Hook Form** - Form management
-- **React Query** - Data fetching and caching
-- **React Hot Toast** - Toast notifications
-- **Date-fns** - Date manipulation
+- `USER` -> `/dashboard`
+- `ADMIN` -> `/admin/dashboard`
+- `TECHNICIAN` -> `/tickets`
 
-### Backend (Required)
-- **Spring Boot** - REST API framework
-- **Spring Security** - Authentication & authorization
-- **MySQL/PostgreSQL** - Database
-- **JWT** - Token-based authentication
+Frontend route protection is handled by `ProtectedRoute`, while backend authorization is enforced in Spring Security.
 
-## 📁 Project Structure
+## Environment Setup
 
-```
-src/
-├── components/
-│   ├── auth/              # Authentication components
-│   ├── layout/            # Layout and navigation
-│   ├── dashboard/         # Dashboard components
-│   ├── facilities/        # Facilities management
-│   ├── bookings/          # Booking management
-│   ├── tickets/           # Ticket management
-│   ├── notifications/     # Notification system
-│   ├── profile/           # User profile
-│   └── admin/             # Admin components
-├── contexts/              # React contexts
-├── App.js                 # Main application component
-├── index.js              # Application entry point
-└── index.css             # Global styles
-```
-
-## 🎯 Key Design Principles
-
-### UI/UX Excellence
-- **Responsive Design**: Mobile-first approach with breakpoints
-- **Consistent Theming**: Navy blue + white color scheme throughout
-- **Intuitive Navigation**: Clear sidebar and header navigation
-- **Accessibility**: Semantic HTML and ARIA labels
-- **Micro-interactions**: Hover states and transitions
-
-### Code Quality
-- **Component Architecture**: Reusable, modular components
-- **State Management**: Context API for global state
-- **Form Handling**: React Hook Form for validation
-- **Error Handling**: Comprehensive error boundaries
-- **Performance**: Optimized re-renders and lazy loading
-
-## 🔐 Security Features
-
-- **Authentication**: JWT-based with OAuth 2.0 support
-- **Authorization**: Role-based access control
-- **Input Validation**: Client and server-side validation
-- **XSS Protection**: Sanitized inputs and outputs
-- **CSRF Protection**: Token-based CSRF prevention
-
-## 📱 Responsive Design
-
-The application is fully responsive with optimized layouts for:
-- **Mobile** (< 640px): Single column, collapsible sidebar
-- **Tablet** (640px - 1024px): Two-column layouts
-- **Desktop** (> 1024px): Full multi-column layouts
-
-## 🚀 Getting Started
-
-### Prerequisites
-- Node.js 16+ 
-- npm or yarn
-- Git
-
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd smart-campus-operations-hub
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Start development server**
-   ```bash
-   npm start
-   ```
-
-4. **Open browser**
-   Navigate to `http://localhost:3000`
-
-### Environment Variables
-
-Create a `.env` file in the root directory:
+Create `Client/.env` from the example below:
 
 ```env
 REACT_APP_API_BASE_URL=http://localhost:8080/api
 REACT_APP_GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
+REACT_APP_NAME=SmartEdu Portal
+REACT_APP_VERSION=1.0.0
 ```
 
-### Google Sign-In Setup
+## Google OAuth 2.0 Setup
 
-This project uses the Google Identity Services sign-in button on the React client and verifies the returned ID token in Spring Boot.
+This project uses Google Identity Services in React and verifies the returned ID token on the Spring Boot backend.
 
-1. Create a Google Cloud project.
-2. Open `APIs & Services` -> `Credentials`.
-3. Create an `OAuth 2.0 Client ID` for a `Web application`.
-4. Add this Authorized JavaScript Origin for local development:
+### Google Cloud steps
+
+1. Open Google Cloud Console
+2. Create or select a project
+3. Go to `APIs & Services` -> `Credentials`
+4. Create an `OAuth 2.0 Client ID`
+5. Choose `Web application`
+6. Add this authorized JavaScript origin:
 
 ```text
 http://localhost:3000
 ```
 
-5. Copy the generated client ID and place it in the client `.env`:
+7. Copy the generated client ID
+
+### Client setup
+
+Paste the client ID into `Client/.env`:
 
 ```env
-REACT_APP_GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
+REACT_APP_GOOGLE_CLIENT_ID=your-real-client-id.apps.googleusercontent.com
 ```
 
-6. Start the backend with the same client ID in the `GOOGLE_CLIENT_ID` environment variable:
+### Backend setup
+
+Start the backend with the same client ID in the environment:
 
 ```powershell
-$env:GOOGLE_CLIENT_ID="your-google-client-id.apps.googleusercontent.com"
+$env:GOOGLE_CLIENT_ID="your-real-client-id.apps.googleusercontent.com"
+$env:JWT_SECRET="replace-this-with-a-strong-secret-of-at-least-32-characters"
 cd E:\Y3S1\PAF\PAF_Project\LMS_PAF\server\server
 .\mvnw.cmd spring-boot:run
 ```
 
-7. Start the frontend:
+### Frontend start
 
 ```powershell
 cd E:\Y3S1\PAF\PAF_Project\LMS_PAF\Client
+npm install
 npm start
 ```
 
-Important notes:
+### Important notes
 
-- The same Google client ID must be used on both client and backend.
-- Google login is not plain email entry; it must go through the Google sign-in button so Google can verify email ownership.
-- When a user signs in with Google for the first time, this backend creates a local account automatically with role `USER`.
+- The same Google client ID must be used on both frontend and backend
+- Google login only works when `REACT_APP_GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_ID` are both set
+- First-time Google users are created as local `USER` accounts
+- Public signup creates student/user accounts only
 
-## 🧪 Testing
+## Backend Security Notes For Report
 
-### Run Tests
-```bash
-npm test
-```
+Use these points in your report or viva:
 
-### Build for Production
-```bash
+- JWT signing secret is loaded from the `JWT_SECRET` environment variable
+- JWT tokens include user identity and role claims
+- Spring Security runs in stateless mode
+- `/api/auth/me` restores the logged-in user from the bearer token
+- Backend authorization is enforced for facilities, bookings, notifications, and auth session endpoints
+- Booking ownership is enforced on the backend for normal users
+
+## Demo Checklist
+
+Before submission, verify:
+
+1. Student registration works
+2. Student login works
+3. Admin login works
+4. Technician login works
+5. Reload keeps the user signed in
+6. Invalid token redirects to login
+7. Google sign-in works with a real Google client ID
+8. Admin-only pages reject non-admin users
+
+## Build
+
+```powershell
 npm run build
 ```
-
-## 📊 Database Schema
-
-The application uses the following main tables:
-
-- **users** - User accounts and profiles
-- **roles** - User roles (USER, ADMIN, TECHNICIAN)
-- **resources** - Facilities and equipment
-- **bookings** - Booking records and status
-- **tickets** - Maintenance and incident tickets
-- **attachments** - Ticket file attachments
-- **comments** - Ticket comments
-- **notifications** - User notifications
-
-## 🔧 Configuration
-
-### Tailwind CSS Configuration
-
-Custom theme extensions in `tailwind.config.js`:
-- Navy blue color palette
-- Custom font family (Inter)
-- Shadow effects for depth
-- Responsive breakpoints
-
-### Routing Configuration
-
-Protected routes with role-based access:
-- `/dashboard` - All authenticated users
-- `/admin/*` - Admin users only
-- `/facilities` - All authenticated users
-- `/bookings` - All authenticated users
-- `/tickets` - All authenticated users
-
-## 🎨 UI Components
-
-### Common Components
-- **Layout**: Header, sidebar, and main content area
-- **Cards**: Consistent card components with shadows
-- **Forms**: Styled form inputs with validation
-- **Buttons**: Primary, secondary, and danger variants
-- **Modals**: Reusable modal components
-- **Tables**: Responsive data tables
-- **Notifications**: Toast and in-app notifications
-
-### Icon System
-Using Heroicons for consistent, beautiful icons:
-- Navigation icons
-- Action icons
-- Status indicators
-- Form field icons
-
-## 📈 Performance Optimizations
-
-- **Code Splitting**: Lazy loading for routes
-- **Image Optimization**: WebP format support
-- **Bundle Analysis**: Optimized dependencies
-- **Caching**: Service worker for offline support
-- **Minification**: Production build optimization
-
-## 🔮 Future Enhancements
-
-- **Real-time Updates**: WebSocket integration
-- **Mobile App**: React Native version
-- **Advanced Analytics**: Usage tracking and insights
-- **QR Code Check-in**: Booking verification
-- **Email Templates**: Customizable notifications
-- **API Rate Limiting**: Enhanced security
-- **Multi-language Support**: Internationalization
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 📞 Support
-
-For support and questions:
-- **Email**: support@campus.edu
-- **Documentation**: See inline code comments
-- **Issues**: Use GitHub Issues for bug reports
-
----
-
-**Smart Campus Operations Hub** - Modernizing university facility management 🏛️

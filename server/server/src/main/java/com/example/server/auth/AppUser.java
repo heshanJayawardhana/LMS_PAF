@@ -30,6 +30,12 @@ public class AppUser {
 
     private String department;
 
+    private String phone;
+
+    private String studentId;
+
+    private String academicYear;
+
     private String status;
 
     private LocalDate joinDate;

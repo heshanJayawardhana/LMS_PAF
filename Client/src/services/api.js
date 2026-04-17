@@ -29,7 +29,13 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const requestUrl = error.config?.url || '';
+    const isAuthRequest =
+      requestUrl.includes('/auth/login') ||
+      requestUrl.includes('/auth/register') ||
+      requestUrl.includes('/auth/google');
+
+    if (error.response?.status === 401 && !isAuthRequest) {
       // Token expired or invalid
       localStorage.removeItem('token');
       localStorage.removeItem('user');
@@ -451,6 +457,28 @@ export const usersAPI = {
       return response.data;
     } catch (error) {
       console.error('Toggle user status error:', error);
+      throw error;
+    }
+  },
+};
+
+export const adminSettingsAPI = {
+  get: async () => {
+    try {
+      const response = await api.get('/admin/settings');
+      return response.data;
+    } catch (error) {
+      console.error('Get admin settings error:', error);
+      throw error;
+    }
+  },
+
+  update: async (settingsData) => {
+    try {
+      const response = await api.put('/admin/settings', settingsData);
+      return response.data;
+    } catch (error) {
+      console.error('Update admin settings error:', error);
       throw error;
     }
   },
