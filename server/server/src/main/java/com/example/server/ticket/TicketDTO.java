@@ -2,6 +2,7 @@ package com.example.server.ticket;
 
 import jakarta.validation.constraints.*;
 import lombok.Data;
+import java.util.List;
 
 @Data
 public class TicketDTO {
