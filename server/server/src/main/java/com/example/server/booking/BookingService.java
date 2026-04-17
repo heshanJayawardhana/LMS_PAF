@@ -46,6 +46,38 @@ public class BookingService {
         
         return bookings;
     }
+
+    public List<Booking> getForUser(String userId, String search, BookingStatus status) {
+        List<Booking> bookings = bookingRepository.findByUserId(userId);
+
+        if (status != null) {
+            bookings = bookings.stream()
+                    .filter(booking -> booking.getStatus() == status)
+                    .toList();
+        }
+
+        if (search != null && !search.trim().isEmpty()) {
+            String searchTerm = search.toLowerCase();
+            bookings = bookings.stream()
+                    .filter(booking -> {
+                        try {
+                            Facility facility = facilityService.getById(booking.getResourceId());
+                            if (facility == null) {
+                                return false;
+                            }
+
+                            return facility.getName().toLowerCase().contains(searchTerm) ||
+                                    booking.getPurpose().toLowerCase().contains(searchTerm) ||
+                                    booking.getRequestedBy().toLowerCase().contains(searchTerm);
+                        } catch (Exception e) {
+                            return false;
+                        }
+                    })
+                    .toList();
+        }
+
+        return bookings;
+    }
     
     public Booking getById(String id) {
         return bookingRepository.findById(id).orElse(null);

@@ -37,16 +37,10 @@ const TicketManagementTechnician = () => {
   const loadTickets = async () => {
     setLoading(true);
     try {
-      // Debug: Log the technician email being used
-      console.log('Technician email:', technicianEmail);
-      console.log('API URL:', `http://localhost:8082/api/tickets/technician/${technicianEmail}`);
-      
       // Fetch tickets assigned to this technician using the new endpoint
       const response = await fetch(`http://localhost:8082/api/tickets/technician/${technicianEmail}`);
       const data = await response.json();
-      
-      console.log('API Response:', data);
-      
+
       if (data && data.success) {
         // Sort tickets by creation date (newest first)
         const sortedTickets = (data.data || []).sort((a, b) => {
@@ -55,7 +49,6 @@ const TicketManagementTechnician = () => {
           return dateB - dateA; // Newest first
         });
         setTickets(sortedTickets);
-        console.log('Tickets set:', sortedTickets);
       } else {
         console.error('API Error:', data);
         alert('Failed to load tickets: ' + (data?.message || 'Unknown error'));
@@ -89,8 +82,6 @@ const TicketManagementTechnician = () => {
         message: commentText
       };
       
-      console.log('Technician adding comment:', commentData);
-      
       const response = await fetch(`http://localhost:8082/api/tickets/${selectedTicket.id}/comments`, {
         method: 'POST',
         headers: {
@@ -103,7 +94,6 @@ const TicketManagementTechnician = () => {
       });
       
       const result = await response.json();
-      console.log('Comment response:', result);
       
       if (result && result.success) {
         alert('Comment added successfully!');
@@ -133,7 +123,6 @@ const TicketManagementTechnician = () => {
   };
 
   const openTicketDetails = (ticket) => {
-    console.log('Opening technician ticket details:', ticket);
     setSelectedTicket(ticket);
     setShowTicketModal(true);
     setCommentText('');

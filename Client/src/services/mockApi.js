@@ -521,6 +521,61 @@ export const usersAPI = {
     };
   },
 
+  create: async (userData) => {
+    await delay(800);
+
+    const existingUser = mockData.users.find(
+      (user) => user.email.toLowerCase() === userData.email.toLowerCase()
+    );
+
+    if (existingUser) {
+      return { success: false, message: 'Email is already registered' };
+    }
+
+    const newUser = {
+      id: mockData.users.length + 1,
+      name: userData.name,
+      email: userData.email.toLowerCase(),
+      phone: userData.phone || '',
+      role: userData.role || 'USER',
+      department: userData.department || 'General',
+      studentId: userData.studentId || `U${Date.now()}`,
+      status: userData.status || 'ACTIVE',
+      joinDate: new Date().toISOString().split('T')[0],
+      lastLogin: 'Never',
+      bookingsCount: 0,
+      ticketsCount: 0,
+    };
+
+    mockData.users.push(newUser);
+    return { success: true, data: newUser };
+  },
+
+  update: async (id, userData) => {
+    await delay(800);
+    const index = mockData.users.findIndex((user) => user.id === parseInt(id));
+
+    if (index === -1) {
+      return { success: false, message: 'User not found' };
+    }
+
+    const duplicateEmail = mockData.users.find(
+      (user) => user.id !== parseInt(id) && user.email.toLowerCase() === userData.email.toLowerCase()
+    );
+
+    if (duplicateEmail) {
+      return { success: false, message: 'Email is already registered' };
+    }
+
+    mockData.users[index] = {
+      ...mockData.users[index],
+      ...userData,
+      email: userData.email.toLowerCase(),
+    };
+
+    return { success: true, data: mockData.users[index] };
+  },
+
   toggleStatus: async (id) => {
     await delay(800);
     const user = mockData.users.find(u => u.id === parseInt(id));
@@ -529,6 +584,17 @@ export const usersAPI = {
       return { success: true, data: user };
     }
     return { success: false, message: 'User not found' };
+  },
+
+  delete: async (id) => {
+    await delay(800);
+    const index = mockData.users.findIndex((user) => user.id === parseInt(id));
+    if (index === -1) {
+      return { success: false, message: 'User not found' };
+    }
+
+    mockData.users.splice(index, 1);
+    return { success: true };
   },
 };
 

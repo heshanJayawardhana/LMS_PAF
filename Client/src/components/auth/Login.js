@@ -139,7 +139,6 @@ const Login = () => {
                     onSuccess={handleGoogleSuccess}
                     onError={handleGoogleError}
                     width="100%"
-                    useOneTap
                   />
                   {isGoogleLoading && (
                     <p className="mt-2 text-center text-sm text-navy-600">Signing in with Google...</p>

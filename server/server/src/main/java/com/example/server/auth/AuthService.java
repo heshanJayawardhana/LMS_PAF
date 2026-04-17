@@ -53,6 +53,9 @@ public class AuthService {
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .role(UserRole.USER)
                 .department(resolveDepartment(request))
+                .phone(null)
+                .studentId(trimToNull(request.getStudentId()))
+                .academicYear(trimToNull(request.getAcademicYear()))
                 .status("ACTIVE")
                 .joinDate(LocalDate.now())
                 .lastLogin(null)
@@ -95,6 +98,9 @@ public class AuthService {
                         .passwordHash(null)
                         .role(UserRole.USER)
                         .department("General")
+                        .phone(null)
+                        .studentId(null)
+                        .academicYear(null)
                         .status("ACTIVE")
                         .joinDate(LocalDate.now())
                         .lastLogin(null)
@@ -180,5 +186,12 @@ public class AuthService {
         }
 
         return "General";
+    }
+
+    private String trimToNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
     }
 }

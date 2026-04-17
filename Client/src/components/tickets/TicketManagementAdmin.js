@@ -46,11 +46,8 @@ const TicketManagementAdmin = () => {
   const loadTickets = async () => {
     setLoading(true);
     try {
-      console.log('Loading tickets from API...');
       const response = await fetch('http://localhost:8082/api/tickets');
       const data = await response.json();
-      console.log('Tickets loaded:', data);
-      console.log('Response structure:', JSON.stringify(data, null, 2));
       if (data && data.success) {
         // Sort tickets by creation date (newest first)
         const sortedTickets = (data.data || []).sort((a, b) => {
@@ -59,7 +56,6 @@ const TicketManagementAdmin = () => {
           return dateB - dateA; // Descending order (newest first)
         });
         setTickets(sortedTickets);
-        console.log('Tickets set in state (sorted newest first):', sortedTickets);
       } else {
         console.error('API Error:', data);
         alert('Failed to load tickets: ' + (data?.message || 'Unknown error'));
@@ -74,22 +70,11 @@ const TicketManagementAdmin = () => {
 
   const handleCreateTicket = async (e) => {
     e.preventDefault();
-    console.log('=== ADMIN TICKET CREATION START ===');
-    console.log('Form data:', { resource, category, priority, description, email, phone });
-    console.log('Form validation:', {
-      resource: !!resource,
-      category: !!category,
-      priority: !!priority,
-      description: !!description && description.trim().length >= 10,
-      email: !!email,
-      phone: !!phone
-    });
     
     setSubmitting(true);
     try {
       // Get user from localStorage
       const user = JSON.parse(localStorage.getItem('user')) || {};
-      console.log('User from localStorage:', user);
       
       const ticketData = {
         resourceId: resource,
@@ -100,8 +85,6 @@ const TicketManagementAdmin = () => {
         contactEmail: email,
         contactPhone: phone
       };
-      
-      console.log('Sending to API:', ticketData);
       
       const response = await fetch('http://localhost:8082/api/tickets', {
         method: 'POST',
@@ -114,7 +97,6 @@ const TicketManagementAdmin = () => {
       });
       
       const result = await response.json();
-      console.log('API Response:', result);
       
       if (result && result.success) {
         alert('Ticket created successfully!');
@@ -149,8 +131,6 @@ const TicketManagementAdmin = () => {
         message: commentText
       };
       
-      console.log('Adding comment:', commentData);
-      
       const response = await fetch(`http://localhost:8082/api/tickets/${selectedTicket.id}/comments`, {
         method: 'POST',
         headers: {
@@ -162,7 +142,6 @@ const TicketManagementAdmin = () => {
       });
       
       const result = await response.json();
-      console.log('Comment response:', result);
       
       if (result && result.success) {
         alert('Comment added successfully!');
@@ -295,7 +274,6 @@ const TicketManagementAdmin = () => {
   };
 
   const openTicketDetails = (ticket) => {
-    console.log('Opening ticket details:', ticket);
     setSelectedTicket(ticket);
     setShowTicketModal(true);
     setCommentText('');
