@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -48,7 +47,6 @@ public class NotificationController {
             Authentication authentication,
             @Valid @RequestBody CreateNotificationRequest request
     ) {
-        requireAdmin(authentication);
         Notification notification = notificationService.createForRecipient(getEmail(authentication), request);
         return new ApiResponse<>(true, notification, "Notification created successfully");
     }
@@ -75,15 +73,5 @@ public class NotificationController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication is required");
         }
         return authentication.getName();
-    }
-
-    private void requireAdmin(Authentication authentication) {
-        boolean isAdmin = authentication != null && authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .anyMatch("ROLE_ADMIN"::equals);
-
-        if (!isAdmin) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin role is required");
-        }
     }
 }

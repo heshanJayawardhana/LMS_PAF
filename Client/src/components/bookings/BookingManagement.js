@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { useNotifications } from '../../contexts/NotificationContext';
 import { bookingsAPI, facilitiesAPI } from '../../services/api';
 import {
   CalendarIcon,
@@ -15,6 +16,7 @@ import {
 import { format } from 'date-fns';
 
 const BookingManagement = () => {
+  const { createNotification } = useNotifications();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -206,6 +208,16 @@ const BookingManagement = () => {
     try {
       const response = await bookingsAPI.approve(bookingId);
       if (response.success) {
+        const booking = filteredBookings.find((item) => item.id === bookingId);
+        if (booking?.requestedByEmail) {
+          await createNotification({
+            recipientEmail: booking.requestedByEmail,
+            message: `Your booking for ${booking.resourceName} was approved.`,
+            type: 'booking_approved',
+            relatedType: 'BOOKING',
+            relatedId: String(bookingId),
+          });
+        }
         loadBookings(); // Reload bookings
       }
     } catch (error) {
@@ -217,6 +229,16 @@ const BookingManagement = () => {
     try {
       const response = await bookingsAPI.reject(bookingId, 'Rejected by admin');
       if (response.success) {
+        const booking = filteredBookings.find((item) => item.id === bookingId);
+        if (booking?.requestedByEmail) {
+          await createNotification({
+            recipientEmail: booking.requestedByEmail,
+            message: `Your booking for ${booking.resourceName} was rejected.`,
+            type: 'booking_rejected',
+            relatedType: 'BOOKING',
+            relatedId: String(bookingId),
+          });
+        }
         loadBookings(); // Reload bookings
       }
     } catch (error) {

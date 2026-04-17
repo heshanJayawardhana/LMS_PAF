@@ -3,6 +3,15 @@
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+const getCurrentMockUser = () => {
+  try {
+    const rawUser = localStorage.getItem('user');
+    return rawUser ? JSON.parse(rawUser) : null;
+  } catch (error) {
+    return null;
+  }
+};
+
 // Mock Data Storage
 let mockData = {
   users: [
@@ -188,11 +197,14 @@ export const bookingsAPI = {
     // Add resource details
     bookings = bookings.map(booking => {
       const resource = mockData.facilities.find(f => f.id === booking.resource_id);
+      const requester = mockData.users.find(u => u.id === booking.user_id);
       return {
         ...booking,
         resourceName: resource?.name || 'Unknown',
         resourceType: resource?.type || 'Unknown',
-        resourceLocation: resource?.location || 'Unknown'
+        resourceLocation: resource?.location || 'Unknown',
+        requestedBy: booking.requestedBy || requester?.name || 'Unknown User',
+        requestedByEmail: requester?.email || null,
       };
     });
     
@@ -280,11 +292,17 @@ export const ticketsAPI = {
     tickets = tickets.map(ticket => {
       const resource = mockData.facilities.find(f => f.id === ticket.resource_id);
       const assignedUser = ticket.assignedTo ? mockData.users.find(u => u.id === ticket.assignedTo) : null;
+      const requester = mockData.users.find(u => u.id === ticket.user_id);
       return {
         ...ticket,
         resourceName: resource?.name || 'Unknown',
         resourceLocation: resource?.location || 'Unknown',
-        assignedToName: assignedUser?.name || 'Unassigned'
+        assignedToName: assignedUser?.name || 'Unassigned',
+        assignedToEmail: assignedUser?.email || null,
+        requestedBy: ticket.requestedBy || requester?.name || 'Unknown User',
+        requestedByEmail: requester?.email || ticket.email || null,
+        comments: ticket.comments || [],
+        attachments: ticket.attachments || [],
       };
     });
     
@@ -318,13 +336,18 @@ export const ticketsAPI = {
 
   create: async (ticketData) => {
     await delay(1000);
+    const currentUser = getCurrentMockUser();
     const newTicket = {
       id: mockData.tickets.length + 1,
-      user_id: 2, // Mock user
+      user_id: currentUser?.id || 2,
       ...ticketData,
       status: 'OPEN',
       assignedTo: null,
-      createdAt: new Date().toISOString().split('T')[0]
+      requestedBy: currentUser?.name || 'Regular User',
+      comments: [],
+      attachments: [],
+      createdAt: new Date().toISOString().split('T')[0],
+      updatedAt: new Date().toISOString().split('T')[0],
     };
     mockData.tickets.push(newTicket);
     
@@ -339,6 +362,7 @@ export const ticketsAPI = {
     const ticket = mockData.tickets.find(t => t.id === parseInt(id));
     if (ticket) {
       ticket.status = status;
+      ticket.updatedAt = new Date().toISOString().split('T')[0];
       return { success: true, data: ticket };
     }
     return { success: false, message: 'Ticket not found' };
@@ -349,8 +373,30 @@ export const ticketsAPI = {
     const ticket = mockData.tickets.find(t => t.id === parseInt(id));
     if (ticket) {
       ticket.assignedTo = assignedTo;
+      ticket.updatedAt = new Date().toISOString().split('T')[0];
       return { success: true, data: ticket };
     }
+    return { success: false, message: 'Ticket not found' };
+  },
+
+  addComment: async (id, comment) => {
+    await delay(500);
+    const ticket = mockData.tickets.find(t => t.id === parseInt(id));
+    const currentUser = getCurrentMockUser();
+
+    if (ticket) {
+      const nextComment = {
+        id: (ticket.comments?.length || 0) + 1,
+        user: currentUser?.name || 'Current User',
+        message: comment,
+        createdAt: new Date().toISOString().replace('T', ' ').slice(0, 16),
+      };
+
+      ticket.comments = [...(ticket.comments || []), nextComment];
+      ticket.updatedAt = new Date().toISOString().split('T')[0];
+      return { success: true, data: ticket };
+    }
+
     return { success: false, message: 'Ticket not found' };
   },
 };
