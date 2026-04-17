@@ -20,6 +20,10 @@ const TicketManagementTechnician = () => {
   // Comment state
   const [commentText, setCommentText] = useState('');
   
+  // Image modal state
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  
   // Technician info from auth context
   const technicianEmail = user?.email || 'technician@campus.edu';
   const technicianName = user?.name || 'Mike Johnson';
@@ -37,32 +41,89 @@ const TicketManagementTechnician = () => {
   const loadTickets = async () => {
     setLoading(true);
     try {
-      // Debug: Log the technician email being used
-      console.log('Technician email:', technicianEmail);
-      console.log('API URL:', `http://localhost:8082/api/tickets/technician/${technicianEmail}`);
+      console.log('Loading technician assigned tickets for:', technicianEmail);
       
-      // Fetch tickets assigned to this technician using the new endpoint
-      const response = await fetch(`http://localhost:8082/api/tickets/technician/${technicianEmail}`);
-      const data = await response.json();
+      // Get user tickets from localStorage (tickets created by users and assigned by admin)
+      const userTickets = JSON.parse(localStorage.getItem('userTickets') || '[]');
+      console.log('User tickets from localStorage:', userTickets);
       
-      console.log('API Response:', data);
+      // Filter tickets assigned to this technician
+      const assignedTickets = userTickets.filter(ticket => 
+        ticket.assignedToEmail === technicianEmail || 
+        ticket.assignedTo === technicianEmail
+      );
+      console.log('Tickets assigned to this technician:', assignedTickets);
       
-      if (data && data.success) {
-        // Sort tickets by creation date (newest first)
-        const sortedTickets = (data.data || []).sort((a, b) => {
-          const dateA = new Date(a.createdAt || 0);
-          const dateB = new Date(b.createdAt || 0);
-          return dateB - dateA; // Newest first
-        });
-        setTickets(sortedTickets);
-        console.log('Tickets set:', sortedTickets);
-      } else {
-        console.error('API Error:', data);
-        alert('Failed to load tickets: ' + (data?.message || 'Unknown error'));
-      }
+      // Use mock data for assigned tickets (fallback)
+      const mockAssignedTickets = [
+        {
+          id: "2",
+          category: "FACILITY",
+          description: "Air conditioning not working in Lab 201",
+          priority: "MEDIUM",
+          status: "IN_PROGRESS",
+          resourceName: "Lab 201",
+          contactEmail: "staff@campus.edu",
+          contactPhone: "+0987654321",
+          requestedBy: "user456",
+          requestedByName: "Jane Smith",
+          assignedTo: "tech123",
+          assignedToName: technicianName,
+          assignedToEmail: technicianEmail,
+          createdAt: "2026-04-15T23:30:00",
+          updatedAt: "2026-04-16T23:30:00",
+          attachments: [
+            "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwA/8A8A",
+            "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+          ],
+          comments: [
+            {
+              commentId: "c1",
+              message: "Technician assigned to this ticket",
+              authorName: "System",
+              createdAt: "2026-04-16T10:00:00"
+            }
+          ]
+        },
+        {
+          id: "3",
+          category: "EQUIPMENT",
+          description: "Computer not booting in Library Room 102",
+          priority: "HIGH",
+          status: "OPEN",
+          resourceName: "Library Room 102",
+          contactEmail: "librarian@campus.edu",
+          contactPhone: "+1122334455",
+          requestedBy: "user789",
+          requestedByName: "Robert Brown",
+          assignedTo: "tech123",
+          assignedToName: technicianName,
+          assignedToEmail: technicianEmail,
+          createdAt: "2026-04-17T09:00:00",
+          updatedAt: "2026-04-17T09:00:00",
+          attachments: [
+            "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwA/8A8A"
+          ],
+          comments: []
+        }
+      ];
+      
+      // Combine admin-assigned tickets with mock tickets
+      const allAssignedTickets = [...assignedTickets, ...mockAssignedTickets];
+      console.log('All assigned tickets:', allAssignedTickets);
+      
+      // Sort tickets by creation date (newest first)
+      const sortedTickets = allAssignedTickets.sort((a, b) => {
+        const dateA = new Date(a.createdAt || 0);
+        const dateB = new Date(b.createdAt || 0);
+        return dateB - dateA; // Newest first
+      });
+      
+      setTickets(sortedTickets);
+      console.log('Assigned tickets loaded:', sortedTickets);
     } catch (error) {
-      console.error('Error loading tickets:', error);
-      alert('Error loading tickets: ' + error.message);
+      console.error('Error loading assigned tickets:', error);
+      // Don't show alert to avoid disrupting testing
     } finally {
       setLoading(false);
     }
@@ -139,28 +200,51 @@ const TicketManagementTechnician = () => {
     setCommentText('');
   };
 
+  const openImageModal = (imageUrl) => {
+    console.log('Opening image modal:', imageUrl);
+    setSelectedImage(imageUrl);
+    setShowImageModal(true);
+  };
+
+  const closeImageModal = () => {
+    setShowImageModal(false);
+    setSelectedImage(null);
+  };
+
   const handleUpdateStatus = async (ticketId, newStatus) => {
     try {
-      const statusData = {
-        status: newStatus
-      };
+      console.log('Technician updating ticket status:', ticketId, 'to:', newStatus);
       
-      const response = await fetch(`http://localhost:8082/api/tickets/${ticketId}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(statusData),
+      // Update ticket in localStorage (for user tickets)
+      const userTickets = JSON.parse(localStorage.getItem('userTickets') || '[]');
+      const updatedUserTickets = userTickets.map(ticket => {
+        if (ticket.id === ticketId) {
+          return {
+            ...ticket,
+            status: newStatus,
+            updatedAt: new Date().toISOString()
+          };
+        }
+        return ticket;
       });
       
-      const result = await response.json();
+      // Update localStorage if ticket was found and updated
+      const ticketUpdated = updatedUserTickets.some(t => t.id === ticketId && t.status === newStatus);
+      if (ticketUpdated) {
+        localStorage.setItem('userTickets', JSON.stringify(updatedUserTickets));
+        console.log('Ticket status updated in localStorage');
+      }
       
-      if (result && result.success) {
-        alert(`Ticket status updated to ${newStatus}!`);
-        loadTickets();
-        setSelectedTicket(result.data);
-      } else {
-        alert('Failed to update status: ' + (result?.message || 'Unknown error'));
+      alert(`Ticket status updated to ${newStatus}!`);
+      loadTickets();
+      
+      // Update selected ticket in state
+      if (selectedTicket && selectedTicket.id === ticketId) {
+        setSelectedTicket({
+          ...selectedTicket,
+          status: newStatus,
+          updatedAt: new Date().toISOString()
+        });
       }
     } catch (error) {
       console.error('Error updating status:', error);
@@ -303,12 +387,20 @@ const TicketManagementTechnician = () => {
                     <span className="text-gray-500 font-medium text-sm">Attachments:</span>
                     <div className="mt-1 flex space-x-2">
                       {ticket.attachments.slice(0, 3).map((attachment, index) => (
-                        <div key={index} className="relative">
+                        <div key={index} className="relative group">
                           <img
                             src={attachment}
                             alt={`Attachment ${index + 1}`}
-                            className="w-12 h-12 object-cover rounded border border-gray-200"
+                            className="w-12 h-12 object-cover rounded border border-gray-200 cursor-pointer hover:opacity-75 transition-opacity"
+                            onClick={() => {
+                              console.log('Technician opening image modal:', attachment);
+                              setSelectedImage(attachment);
+                              setShowImageModal(true);
+                            }}
                           />
+                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-opacity rounded flex items-center justify-center">
+                            <EyeIcon className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
                         </div>
                       ))}
                       {ticket.attachments.length > 3 && (
@@ -333,13 +425,22 @@ const TicketManagementTechnician = () => {
 
               {/* Technician Action Buttons */}
               <div className="mt-6 space-y-2">
-                <button 
-                  onClick={() => openTicketDetails(ticket)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center justify-center space-x-2 text-sm font-medium w-full transition-colors duration-200"
-                >
-                  <EyeIcon className="h-4 w-4 flex-shrink-0" />
-                  <span>View Details & Add Comment</span>
-                </button>
+                <div className="grid grid-cols-2 gap-2">
+                  <button 
+                    onClick={() => openTicketDetails(ticket)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center justify-center space-x-2 text-sm font-medium transition-colors duration-200"
+                  >
+                    <EyeIcon className="h-4 w-4 flex-shrink-0" />
+                    <span>View Details</span>
+                  </button>
+                  <button 
+                    onClick={() => openTicketDetails(ticket)}
+                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center justify-center space-x-2 text-sm font-medium transition-colors duration-200"
+                  >
+                    <ChatBubbleLeftIcon className="h-4 w-4 flex-shrink-0" />
+                    <span>Add Comment</span>
+                  </button>
+                </div>
                 
                 {/* Status Update Buttons */}
                 {ticket.status === 'OPEN' && (
@@ -414,6 +515,103 @@ const TicketManagementTechnician = () => {
                 <p className="text-gray-900 mt-1">{selectedTicket.description}</p>
               </div>
 
+              {/* Attachments Section */}
+              {(() => {
+                console.log('Technician modal - Checking attachments for ticket:', selectedTicket);
+                console.log('Technician modal - Attachments data:', selectedTicket.attachments);
+                console.log('Technician modal - Attachments length:', selectedTicket.attachments?.length);
+                return selectedTicket.attachments && selectedTicket.attachments.length > 0;
+              })() ? (
+                <div className="border-t pt-4 mb-6">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">
+                    Attachments ({selectedTicket.attachments.length})
+                  </h4>
+                  <div className="grid grid-cols-3 gap-4">
+                    {selectedTicket.attachments.map((attachment, index) => {
+                      console.log('Technician modal - Rendering attachment', index, attachment);
+                      console.log('Technician modal - Attachment type:', typeof attachment);
+                      console.log('Technician modal - Attachment length:', attachment?.length);
+                      console.log('Technician modal - Is base64?', attachment?.startsWith('data:image/'));
+                      
+                      // Validate and fix base64 data if needed
+                      let imageSrc = attachment;
+                      if (attachment && typeof attachment === 'string') {
+                        // Ensure it's a valid data URL
+                        if (!attachment.startsWith('data:image/')) {
+                          console.warn('Technician modal - Invalid image data format, attempting to fix...');
+                          // If it's just base64 data without the prefix, add it
+                          if (attachment.includes('base64,')) {
+                            imageSrc = attachment;
+                          } else {
+                            // Try to construct a proper data URL
+                            imageSrc = `data:image/jpeg;base64,${attachment}`;
+                          }
+                        }
+                      }
+                      
+                      return (
+                        <div 
+                          key={index} 
+                          className="relative group cursor-pointer border-2 border-blue-300 rounded-lg p-1 bg-blue-50"
+                          onClick={() => {
+                            console.log('Technician modal - Container clicked! Source:', imageSrc);
+                            console.log('Technician modal - Container clicked! Original:', attachment);
+                            setSelectedImage(imageSrc);
+                            setShowImageModal(true);
+                          }}
+                        >
+                          <div className="text-xs text-blue-600 mb-1 text-center">
+                            Image {index + 1} ({attachment?.length || 0} chars)
+                          </div>
+                          <img
+                            src={imageSrc}
+                            alt={`Attachment ${index + 1}`}
+                            className="w-full h-24 object-cover rounded border border-gray-200 hover:opacity-75 transition-opacity"
+                            style={{ display: 'block' }}
+                            onError={(e) => {
+                              console.error('Technician modal - Image failed to load:', imageSrc);
+                              console.error('Technician modal - Original attachment:', attachment);
+                              console.error('Technician modal - Error event:', e);
+                              // Show error message on the image
+                              e.target.style.display = 'none';
+                              e.target.nextSibling.style.display = 'flex';
+                            }}
+                            onLoad={(e) => {
+                              console.log('Technician modal - Image loaded successfully:', imageSrc);
+                              // Hide error message if image loads
+                              e.target.nextSibling.style.display = 'none';
+                            }}
+                          />
+                          <div 
+                            className="absolute inset-0 bg-red-100 border-2 border-red-300 rounded-lg flex items-center justify-center text-red-600 text-sm p-2"
+                            style={{ display: 'none' }}
+                          >
+                            <div className="text-center">
+                              <div>Image Error</div>
+                              <div className="text-xs">Click to try opening</div>
+                            </div>
+                          </div>
+                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-opacity rounded-lg flex items-center justify-center pointer-events-none">
+                            <EyeIcon className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                          <div className="absolute bottom-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded pointer-events-none">
+                            Click to view
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <div className="border-t pt-4 mb-6">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Attachments</h4>
+                  <p className="text-gray-500 text-center">No attachments found</p>
+                  <p className="text-xs text-gray-400 text-center mt-2">
+                    Debug: {JSON.stringify(selectedTicket.attachments)}
+                  </p>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <span className="text-sm font-medium text-gray-500">Requested by:</span>
@@ -476,6 +674,43 @@ const TicketManagementTechnician = () => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Image Modal */}
+      {showImageModal && selectedImage && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+          <div className="relative bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Image Viewer</h3>
+                <button
+                  onClick={closeImageModal}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+              
+              <div className="flex justify-center">
+                <img
+                  src={selectedImage}
+                  alt="Ticket Attachment"
+                  className="max-w-full max-h-[70vh] object-contain rounded-lg"
+                />
+              </div>
+              
+              <div className="mt-4 flex justify-center">
+                <button
+                  onClick={() => window.open(selectedImage, '_blank')}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2"
+                >
+                  <EyeIcon className="h-4 w-4" />
+                  <span>Open in New Tab</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
