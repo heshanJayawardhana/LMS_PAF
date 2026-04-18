@@ -25,6 +25,7 @@ const TicketManagement = () => {
   const [filterPriority, setFilterPriority] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
+  const [detailTicket, setDetailTicket] = useState(null);
   const [commentText, setCommentText] = useState('');
   const [commentSubmitting, setCommentSubmitting] = useState(false);
   const [attachments, setAttachments] = useState([]);
@@ -188,6 +189,14 @@ const TicketManagement = () => {
     setCommentText('');
   };
 
+  const openTicketDetails = (ticket) => {
+    setDetailTicket(ticket);
+  };
+
+  const closeTicketDetails = () => {
+    setDetailTicket(null);
+  };
+
   const closeCommentModal = () => {
     if (commentSubmitting) {
       return;
@@ -222,6 +231,7 @@ const TicketManagement = () => {
         key: 'view',
         label: 'View',
         icon: EyeIcon,
+        onClick: () => openTicketDetails(ticket),
         className: 'border border-navy-200 bg-white text-navy-700 hover:border-navy-300 hover:bg-navy-50',
       },
       {
@@ -404,7 +414,7 @@ const TicketManagement = () => {
               )}
 
               <div className="text-xs text-navy-500">
-                Created: {ticket.createdAt} • Updated: {ticket.updatedAt}
+                Created: {ticket.createdAt} | Updated: {ticket.updatedAt}
               </div>
             </div>
 
@@ -445,8 +455,95 @@ const TicketManagement = () => {
           <TicketIcon className="mx-auto h-12 w-12 text-navy-400" />
           <h3 className="mt-2 text-sm font-medium text-navy-900">No tickets found</h3>
           <p className="mt-1 text-sm text-navy-500">
-            Try adjusting your search or filters
+            {user?.role === 'ADMIN' || user?.role === 'TECHNICIAN'
+              ? 'No tickets are available yet. Create one or ask a student to submit a ticket first.'
+              : 'Try adjusting your search or filters'}
           </p>
+        </div>
+      )}
+
+      {detailTicket && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-gray-600 bg-opacity-50">
+          <div className="relative top-10 mx-auto w-full max-w-2xl rounded-lg bg-white p-6 shadow-lg">
+            <div className="mb-4 flex items-start justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-navy-900">
+                  Ticket Details {formatTicketId(detailTicket.id)}
+                </h3>
+                <p className="mt-1 text-sm text-navy-600">
+                  Review the issue, requester details, and workflow status.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeTicketDetails}
+                className="rounded-md p-1 text-navy-400 transition-colors hover:bg-navy-50 hover:text-navy-700"
+              >
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="rounded-lg border border-navy-100 bg-navy-50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-navy-500">Issue</p>
+                <h4 className="mt-2 text-base font-semibold text-navy-900">{detailTicket.category}</h4>
+                <p className="mt-2 text-sm text-navy-700">{detailTicket.description}</p>
+              </div>
+              <div className="rounded-lg border border-navy-100 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-navy-500">Status</p>
+                <div className="mt-2 flex items-center gap-2">
+                  <span className={`rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(detailTicket.status)}`}>
+                    {detailTicket.status}
+                  </span>
+                  <span className={`rounded-full px-2 py-1 text-xs font-medium ${getPriorityColor(detailTicket.priority)}`}>
+                    {detailTicket.priority}
+                  </span>
+                </div>
+                <p className="mt-4 text-sm text-navy-600">
+                  Assigned to: <span className="font-medium text-navy-900">{detailTicket.assignedTo || 'Unassigned'}</span>
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="rounded-lg border border-navy-100 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-navy-500">Resource</p>
+                <p className="mt-2 text-sm text-navy-900">{detailTicket.resource}</p>
+                <p className="mt-1 text-sm text-navy-600">{detailTicket.location}</p>
+              </div>
+              <div className="rounded-lg border border-navy-100 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-navy-500">Requester</p>
+                <p className="mt-2 text-sm text-navy-900">{detailTicket.requestedBy}</p>
+                <p className="mt-1 text-sm text-navy-600">{detailTicket.requestedByEmail || detailTicket.email || 'No email available'}</p>
+                <p className="mt-1 text-sm text-navy-600">{detailTicket.phone || 'No phone available'}</p>
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-lg border border-navy-100 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-navy-500">Activity</p>
+              <p className="mt-2 text-sm text-navy-600">Created: <span className="text-navy-900">{detailTicket.createdAt}</span></p>
+              <p className="mt-1 text-sm text-navy-600">Updated: <span className="text-navy-900">{detailTicket.updatedAt}</span></p>
+              <p className="mt-1 text-sm text-navy-600">Comments: <span className="text-navy-900">{detailTicket.comments?.length || 0}</span></p>
+              <p className="mt-1 text-sm text-navy-600">Attachments: <span className="text-navy-900">{detailTicket.attachments?.length || 0}</span></p>
+            </div>
+
+            {detailTicket.comments && detailTicket.comments.length > 0 && (
+              <div className="mt-4 rounded-lg border border-navy-100 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-navy-500">Latest Comments</p>
+                <div className="mt-3 space-y-3">
+                  {detailTicket.comments.slice().reverse().slice(0, 3).map((comment) => (
+                    <div key={comment.id || comment.createdAt} className="rounded-lg bg-navy-50 p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-sm font-medium text-navy-900">{comment.user}</span>
+                        <span className="text-xs text-navy-500">{comment.createdAt}</span>
+                      </div>
+                      <p className="mt-1 text-sm text-navy-700">{comment.message}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -673,7 +770,7 @@ const TicketManagement = () => {
                       <p className="text-sm text-navy-600">Selected files:</p>
                       <ul className="text-xs text-navy-500">
                         {attachments.map((file, index) => (
-                          <li key={index}>• {file.name}</li>
+                          <li key={index}>- {file.name}</li>
                         ))}
                       </ul>
                     </div>
