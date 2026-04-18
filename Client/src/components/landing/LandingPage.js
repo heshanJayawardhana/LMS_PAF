@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   BuildingOfficeIcon,
@@ -11,6 +11,22 @@ import {
 } from '@heroicons/react/24/outline';
 
 const LandingPage = () => {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  
+  const backgroundImages = [
+    'https://t3.ftcdn.net/jpg/08/23/48/92/360_F_823489262_onPGneSlusimWkc7yWWUZIBb271JyVs7.jpg',
+    'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQZtwodKRUhMrPaslgUM3qPM0_rB7RZJsR2Zw&s',
+    'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ_7YT7LjMUXHOxKTo85Q2YPErXtiedWdMqeQ&s'
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prevIndex) => (prevIndex + 1) % backgroundImages.length);
+    }, 2000); // Change image every 2 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
   const features = [
     {
       icon: BuildingOfficeIcon,
@@ -117,9 +133,9 @@ const LandingPage = () => {
       {/* Hero Section */}
       <div className="relative bg-gradient-to-br from-navy-700 to-navy-900 py-24 px-4 sm:px-6 lg:px-8">
         <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20"
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20 transition-opacity duration-1000"
           style={{
-            backgroundImage: 'url("https://t3.ftcdn.net/jpg/08/23/48/92/360_F_823489262_onPGneSlusimWkc7yWWUZIBb271JyVs7.jpg")'
+            backgroundImage: `url("${backgroundImages[currentImageIndex]}")`
           }}
         ></div>
         <div className="relative z-10">
