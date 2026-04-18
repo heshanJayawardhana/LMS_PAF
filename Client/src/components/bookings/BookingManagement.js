@@ -8,8 +8,6 @@ import {
   EyeIcon,
   PencilIcon,
   TrashIcon,
-  CheckCircleIcon,
-  XMarkIcon,
   ClockIcon,
 } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
@@ -165,16 +163,16 @@ const BookingManagement = () => {
     switch (status) {
       case 'APPROVED':
       case 'RESOLVED':
-        return <CheckCircleIcon className="h-4 w-4" />;
+        return <CalendarIcon className="h-4 w-4" />;
       case 'PENDING':
       case 'OPEN':
         return <ClockIcon className="h-4 w-4" />;
       case 'IN_PROGRESS':
         return <ClockIcon className="h-4 w-4" />;
       case 'REJECTED':
-        return <XMarkIcon className="h-4 w-4" />;
+        return <TrashIcon className="h-4 w-4" />;
       case 'CANCELLED':
-        return <XMarkIcon className="h-4 w-4" />;
+        return <TrashIcon className="h-4 w-4" />;
       default:
         return <ClockIcon className="h-4 w-4" />;
     }
@@ -202,39 +200,7 @@ const BookingManagement = () => {
     }
   };
 
-  const handleApprove = async (bookingId) => {
-    try {
-      const response = await bookingsAPI.approve(bookingId);
-      if (response.success) {
-        loadBookings(); // Reload bookings
-      }
-    } catch (error) {
-      console.error('Failed to approve booking:', error);
-    }
-  };
-
-  const handleReject = async (bookingId) => {
-    try {
-      const response = await bookingsAPI.reject(bookingId, 'Rejected by admin');
-      if (response.success) {
-        loadBookings(); // Reload bookings
-      }
-    } catch (error) {
-      console.error('Failed to reject booking:', error);
-    }
-  };
-
-  const handleCancel = async (bookingId) => {
-    try {
-      const response = await bookingsAPI.cancel(bookingId);
-      if (response.success) {
-        loadBookings(); // Reload bookings
-      }
-    } catch (error) {
-      console.error('Failed to cancel booking:', error);
-    }
-  };
-
+  
   const handleDelete = async (bookingId) => {
     if (window.confirm('Are you sure you want to delete this booking?')) {
       try {
@@ -250,6 +216,14 @@ const BookingManagement = () => {
 
   const handleEdit = (booking) => {
     setSelectedBooking(booking);
+    reset({
+      resource: booking.resourceId,
+      date: booking.date,
+      startTime: booking.startTime,
+      endTime: booking.endTime,
+      purpose: booking.purpose,
+      attendees: booking.attendees
+    });
     setShowEditModal(true);
   };
 
@@ -401,30 +375,6 @@ const BookingManagement = () => {
                       >
                         <TrashIcon className="h-6 w-6" />
                       </button>
-                      {booking.status === 'PENDING' && (
-                        <>
-                          <button 
-                            onClick={() => handleApprove(booking.id)}
-                            className="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50 transition-colors"
-                          >
-                            <CheckCircleIcon className="h-6 w-6" />
-                          </button>
-                          <button 
-                            onClick={() => handleReject(booking.id)}
-                            className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 transition-colors"
-                          >
-                            <XMarkIcon className="h-6 w-6" />
-                          </button>
-                        </>
-                      )}
-                      {booking.status === 'APPROVED' && (
-                        <button 
-                          onClick={() => handleCancel(booking.id)}
-                          className="text-gray-600 hover:text-gray-900 p-1 rounded hover:bg-gray-50 transition-colors"
-                        >
-                          <XMarkIcon className="h-6 w-6" />
-                        </button>
-                      )}
                     </div>
                   </td>
                 </tr>
@@ -568,7 +518,7 @@ const BookingManagement = () => {
               </form>
             </div>
           </div>
-        </div>)}
+        </div>
       )}
 
       {/* Edit Booking Modal */}
@@ -586,7 +536,6 @@ const BookingManagement = () => {
                   <select
                     {...register('resource', { required: 'Resource is required' })}
                     className="input-field"
-                    defaultValue={selectedBooking.resourceId}
                   >
                     <option value="">Select a resource</option>
                     {facilities.map(facility => (
@@ -606,7 +555,6 @@ const BookingManagement = () => {
                     type="date"
                     {...register('date', { required: 'Date is required' })}
                     className="input-field"
-                    defaultValue={selectedBooking.date}
                   />
                   {errors.date && (
                     <p className="mt-1 text-sm text-red-600">{errors.date.message}</p>
@@ -622,7 +570,6 @@ const BookingManagement = () => {
                       type="time"
                       {...register('startTime', { required: 'Start time is required' })}
                       className="input-field"
-                      defaultValue={selectedBooking.startTime}
                     />
                     {errors.startTime && (
                       <p className="mt-1 text-sm text-red-600">{errors.startTime.message}</p>
@@ -636,7 +583,6 @@ const BookingManagement = () => {
                       type="time"
                       {...register('endTime', { required: 'End time is required' })}
                       className="input-field"
-                      defaultValue={selectedBooking.endTime}
                     />
                     {errors.endTime && (
                       <p className="mt-1 text-sm text-red-600">{errors.endTime.message}</p>
@@ -652,7 +598,6 @@ const BookingManagement = () => {
                     {...register('purpose', { required: 'Purpose is required' })}
                     rows={3}
                     className="input-field"
-                    defaultValue={selectedBooking.purpose}
                     placeholder="Describe the purpose of this booking"
                   />
                   {errors.purpose && (
@@ -671,7 +616,6 @@ const BookingManagement = () => {
                       min: { value: 1, message: 'Must be at least 1' }
                     })}
                     className="input-field"
-                    defaultValue={selectedBooking.attendees}
                     placeholder="Expected number of attendees"
                   />
                   {errors.attendees && (
