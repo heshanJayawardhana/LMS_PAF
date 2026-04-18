@@ -50,6 +50,9 @@ const FacilitiesCatalogue = () => {
     loadFacilities();
   }, [searchTerm, filterType, filterStatus, filterLocation, minCapacity]);
 
+  /**
+   * Fetches the list of facilities from the API based on current filters and search term.
+   */
   const loadFacilities = async () => {
     setLoading(true);
     try {
@@ -74,12 +77,19 @@ const FacilitiesCatalogue = () => {
     }
   };
 
+  /**
+   * Opens the modal to create a new facility, resetting form data to default.
+   */
   const openCreateModal = () => {
     setEditingFacility(null);
     setFormData(defaultForm);
     setShowModal(true);
   };
 
+  /**
+   * Opens the modal to edit an existing facility, populating form data with its details.
+   * @param {Object} facility - The facility object to edit.
+   */
   const openEditModal = (facility) => {
     setEditingFacility(facility);
     setFormData({
@@ -95,16 +105,27 @@ const FacilitiesCatalogue = () => {
     setShowModal(true);
   };
 
+  /**
+   * Closes the facility modal and resets editing state and form data.
+   */
   const closeModal = () => {
     setShowModal(false);
     setEditingFacility(null);
     setFormData(defaultForm);
   };
 
+  /**
+   * Handles changes to the form input fields and updates form state.
+   * @param {string} key - The form field name to update.
+   * @param {any} value - The new value for the field.
+   */
   const handleFormChange = (key, value) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
   };
 
+  /**
+   * Submits the form data to the API to either create a new facility or update an existing one.
+   */
   const handleSaveFacility = async () => {
     if (!formData.name.trim() || !formData.location.trim() || !formData.availabilityWindow.trim()) {
       toast.error('Please fill all required fields');
@@ -144,6 +165,10 @@ const FacilitiesCatalogue = () => {
     }
   };
 
+  /**
+   * Prompts for confirmation and deletes a facility by its ID.
+   * @param {string} id - The ID of the facility to delete.
+   */
   const handleDeleteFacility = async (id) => {
     if (!window.confirm('Are you sure you want to delete this facility?')) {
       return;
@@ -158,6 +183,9 @@ const FacilitiesCatalogue = () => {
     }
   };
 
+  /**
+   * Requests a PDF report of all facilities from the API and triggers a download.
+   */
   const handleDownloadPdf = async () => {
     setDownloading(true);
     try {
@@ -179,6 +207,11 @@ const FacilitiesCatalogue = () => {
     }
   };
 
+  /**
+   * Formats the facility type enum value into a human-readable string.
+   * @param {string} type - The facility type enum string.
+   * @returns {string} The formatted facility type.
+   */
   const formatType = (type) => {
     switch (type) {
       case 'MEETING_ROOM':
@@ -194,6 +227,11 @@ const FacilitiesCatalogue = () => {
     }
   };
 
+  /**
+   * Determines the appropriate CSS classes for a facility's status badge.
+   * @param {string} status - The facility status.
+   * @returns {string} Tailwind CSS classes for the status badge.
+   */
   const getStatusColor = (status) => {
     switch (status) {
       case 'ACTIVE':
@@ -207,6 +245,11 @@ const FacilitiesCatalogue = () => {
     }
   };
 
+  /**
+   * Returns the corresponding emoji icon for a given facility type.
+   * @param {string} type - The facility type enum string.
+   * @returns {string} Emoji representing the facility type.
+   */
   const getTypeIcon = (type) => {
     switch (type) {
       case 'MEETING_ROOM':

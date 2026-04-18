@@ -40,6 +40,15 @@ public class FacilityController {
         this.service = service;
     }
 
+    /**
+     * Endpoint to retrieve a filtered list of facilities.
+     * @param search Keyword to search in name, location, or description.
+     * @param type Facility type filter.
+     * @param status Facility status filter.
+     * @param location Facility location filter.
+     * @param minCapacity Minimum capacity filter.
+     * @return ApiResponse containing the list of facilities.
+     */
     @GetMapping
     public ApiResponse<List<Facility>> getAllFacilities(
             @RequestParam(required = false) String search,
@@ -51,28 +60,53 @@ public class FacilityController {
         return new ApiResponse<>(true, service.getAll(search, type, status, location, minCapacity), null);
     }
 
+    /**
+     * Endpoint to retrieve a specific facility by its ID.
+     * @param id The ID of the facility.
+     * @return ApiResponse containing the facility details.
+     */
     @GetMapping("/{id}")
     public ApiResponse<Facility> getFacilityById(@PathVariable String id) {
         return new ApiResponse<>(true, service.getById(id), null);
     }
 
+    /**
+     * Endpoint to create a new facility.
+     * @param facility The facility data to be created.
+     * @return ApiResponse containing the created facility.
+     */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<Facility> createFacility(@Valid @RequestBody Facility facility) {
         return new ApiResponse<>(true, service.create(facility), "Facility created successfully");
     }
 
+    /**
+     * Endpoint to update an existing facility.
+     * @param id The ID of the facility to update.
+     * @param facility The updated facility data.
+     * @return ApiResponse containing the updated facility.
+     */
     @PutMapping("/{id}")
     public ApiResponse<Facility> updateFacility(@PathVariable String id, @Valid @RequestBody Facility facility) {
         return new ApiResponse<>(true, service.update(id, facility), "Facility updated successfully");
     }
 
+    /**
+     * Endpoint to delete a facility by its ID.
+     * @param id The ID of the facility to delete.
+     * @return ApiResponse confirming the deletion.
+     */
     @DeleteMapping("/{id}")
     public ApiResponse<Void> deleteFacility(@PathVariable String id) {
         service.delete(id);
         return new ApiResponse<>(true, null, "Facility deleted successfully");
     }
 
+    /**
+     * Endpoint to generate and download a PDF report of all facilities.
+     * @return ResponseEntity containing the generated PDF as a byte array.
+     */
     @GetMapping("/report")
     public ResponseEntity<byte[]> generateFacilitiesReport() {
         List<Facility> facilities = service.getAll(null, null, null, null, null);

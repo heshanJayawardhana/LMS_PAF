@@ -15,6 +15,15 @@ public class FacilityService {
         this.repository = repository;
     }
 
+    /**
+     * Retrieves a list of facilities based on optional filter parameters.
+     * @param search Keyword to search in name, location, or description.
+     * @param type Facility type filter.
+     * @param status Facility status filter.
+     * @param location Facility location filter.
+     * @param minCapacity Minimum capacity filter.
+     * @return List of matching facilities.
+     */
     public List<Facility> getAll(String search, FacilityType type, FacilityStatus status, String location, Integer minCapacity) {
         return repository.findAll().stream()
                 .filter(f -> matchesSearch(f, search))
@@ -25,11 +34,22 @@ public class FacilityService {
                 .toList();
     }
 
+    /**
+     * Retrieves a specific facility by its unique ID.
+     * @param id The ID of the facility to retrieve.
+     * @return The requested Facility object.
+     * @throws ResponseStatusException if the facility is not found.
+     */
     public Facility getById(String id) {
         return repository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Facility not found"));
     }
 
+    /**
+     * Creates a new facility record.
+     * @param facility The facility details to create.
+     * @return The created Facility object.
+     */
     public Facility create(Facility facility) {
         facility.setId(null);
         facility.setCreatedAt(Instant.now());
@@ -37,6 +57,12 @@ public class FacilityService {
         return repository.save(facility);
     }
 
+    /**
+     * Updates an existing facility by its ID.
+     * @param id The ID of the facility to update.
+     * @param updatedFacility The updated facility data.
+     * @return The updated Facility object.
+     */
     public Facility update(String id, Facility updatedFacility) {
         Facility existing = getById(id);
         existing.setName(updatedFacility.getName());
@@ -51,6 +77,11 @@ public class FacilityService {
         return repository.save(existing);
     }
 
+    /**
+     * Deletes a facility by its ID.
+     * @param id The ID of the facility to delete.
+     * @throws ResponseStatusException if the facility is not found.
+     */
     public void delete(String id) {
         if (!repository.existsById(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Facility not found");
@@ -58,6 +89,12 @@ public class FacilityService {
         repository.deleteById(id);
     }
 
+    /**
+     * Validates if a facility matches a given search string.
+     * @param facility The facility to check.
+     * @param search The search keyword.
+     * @return True if the facility matches the search string, false otherwise.
+     */
     private boolean matchesSearch(Facility facility, String search) {
         if (search == null || search.isBlank()) {
             return true;
@@ -67,6 +104,12 @@ public class FacilityService {
                 || containsIgnoreCase(facility.getDescription(), search);
     }
 
+    /**
+     * Helper method to check if a string contains a query string, ignoring case.
+     * @param value The value to search within.
+     * @param query The query to search for.
+     * @return True if value contains query ignoring case, false otherwise.
+     */
     private boolean containsIgnoreCase(String value, String query) {
         if (value == null || query == null) {
             return false;
