@@ -1,6 +1,11 @@
 package com.example.server.facility;
 
+import com.example.server.auth.AppUser;
+import com.example.server.auth.UserRepository;
+import com.example.server.auth.UserRole;
 import com.example.server.common.ApiResponse;
+import com.example.server.notification.NotificationService;
+import com.example.server.notification.dto.CreateNotificationRequest;
 import com.lowagie.text.Document;
 import com.lowagie.text.Element;
 import com.lowagie.text.Font;
@@ -35,9 +40,17 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/facilities")
 public class FacilityController {
     private final FacilityService service;
+    private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
-    public FacilityController(FacilityService service) {
+    public FacilityController(
+            FacilityService service,
+            UserRepository userRepository,
+            NotificationService notificationService
+    ) {
         this.service = service;
+        this.userRepository = userRepository;
+        this.notificationService = notificationService;
     }
 
     @GetMapping
@@ -59,17 +72,35 @@ public class FacilityController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<Facility> createFacility(@Valid @RequestBody Facility facility) {
-        return new ApiResponse<>(true, service.create(facility), "Facility created successfully");
+        Facility created = service.create(facility);
+        notifyStudents(
+                "New facility available: " + created.getName() + " at " + created.getLocation() + ".",
+                "facility_created",
+                created.getId()
+        );
+        return new ApiResponse<>(true, created, "Facility created successfully");
     }
 
     @PutMapping("/{id}")
     public ApiResponse<Facility> updateFacility(@PathVariable String id, @Valid @RequestBody Facility facility) {
-        return new ApiResponse<>(true, service.update(id, facility), "Facility updated successfully");
+        Facility updated = service.update(id, facility);
+        notifyStudents(
+                "Facility updated: " + updated.getName() + " is now " + updated.getStatus().name() + ".",
+                "facility_updated",
+                updated.getId()
+        );
+        return new ApiResponse<>(true, updated, "Facility updated successfully");
     }
 
     @DeleteMapping("/{id}")
     public ApiResponse<Void> deleteFacility(@PathVariable String id) {
+        Facility facility = service.getById(id);
         service.delete(id);
+        notifyStudents(
+                "Facility removed: " + facility.getName() + " is no longer available for booking.",
+                "facility_deleted",
+                id
+        );
         return new ApiResponse<>(true, null, "Facility deleted successfully");
     }
 
@@ -154,6 +185,18 @@ public class FacilityController {
             return new ResponseEntity<>(baos.toByteArray(), headersHttp, HttpStatus.OK);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    private void notifyStudents(String message, String type, String facilityId) {
+        for (AppUser user : userRepository.findByRole(UserRole.USER)) {
+            CreateNotificationRequest request = new CreateNotificationRequest();
+            request.setRecipientEmail(user.getEmail());
+            request.setMessage(message);
+            request.setType(type);
+            request.setRelatedType("FACILITY");
+            request.setRelatedId(facilityId);
+            notificationService.createForRecipient(user.getEmail(), request);
         }
     }
 }

@@ -60,6 +60,11 @@ public class TicketService {
                 .build();
 
         Ticket saved = ticketRepository.save(ticket);
+        notifyTicketOwner(
+                saved,
+                "You created ticket " + formatTicketCode(saved.getId()) + " for " + saved.getResource() + ".",
+                "ticket_created"
+        );
         notifyAdminsAndTechnicians(saved, "New ticket submitted for " + saved.getResource() + ".", "info");
         return toResponse(saved);
     }
@@ -201,6 +206,15 @@ public class TicketService {
             request.setRelatedId(ticket.getId());
             notificationService.createForRecipient(user.getEmail(), request);
         });
+    }
+
+    private String formatTicketCode(String ticketId) {
+        if (ticketId == null || ticketId.isBlank()) {
+            return "TKT-0000";
+        }
+
+        String shortId = ticketId.length() > 6 ? ticketId.substring(ticketId.length() - 6) : ticketId;
+        return "TKT-" + shortId.toUpperCase();
     }
 
     private void notifyAdminsAndTechnicians(Ticket ticket, String message, String type) {

@@ -100,6 +100,11 @@ public class BookingController {
                 .build();
             
             Booking createdBooking = bookingService.create(booking);
+            notifyBookingOwner(
+                    createdBooking,
+                    "You created a booking request for " + resolveResourceName(createdBooking) + ". Awaiting admin review.",
+                    "booking_created"
+            );
             notifyAdminsAboutPendingBooking(createdBooking);
             Map<String, Object> response = convertToResponse(createdBooking);
             

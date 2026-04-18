@@ -5,6 +5,7 @@ import {
   CheckCircleIcon,
   CalendarIcon,
   TicketIcon,
+  BuildingOfficeIcon,
   ExclamationTriangleIcon,
   InformationCircleIcon,
   TrashIcon,
@@ -53,7 +54,13 @@ const Notifications = () => {
     switch (type) {
       case 'booking_approved':
       case 'booking_rejected':
+      case 'booking_created':
         return <CalendarIcon className="h-5 w-5 text-blue-500" />;
+      case 'facility_created':
+      case 'facility_updated':
+      case 'facility_deleted':
+        return <BuildingOfficeIcon className="h-5 w-5 text-indigo-500" />;
+      case 'ticket_created':
       case 'ticket_comment':
       case 'ticket_assigned':
       case 'ticket_resolved':
@@ -72,6 +79,16 @@ const Notifications = () => {
         return 'bg-green-50 border-green-200';
       case 'booking_rejected':
         return 'bg-red-50 border-red-200';
+      case 'booking_created':
+        return 'bg-blue-50 border-blue-200';
+      case 'facility_created':
+        return 'bg-indigo-50 border-indigo-200';
+      case 'facility_updated':
+        return 'bg-sky-50 border-sky-200';
+      case 'facility_deleted':
+        return 'bg-gray-50 border-gray-300';
+      case 'ticket_created':
+        return 'bg-amber-50 border-amber-200';
       case 'ticket_comment':
         return 'bg-blue-50 border-blue-200';
       case 'ticket_assigned':
