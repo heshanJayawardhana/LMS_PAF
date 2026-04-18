@@ -328,6 +328,16 @@ const TicketManagementAdmin = () => {
     'Physics Lab 201',
   ];
 
+  const formatTicketId = (ticketId) => {
+    if (!ticketId) {
+      return 'TKT-0000';
+    }
+
+    const rawId = String(ticketId).trim();
+    const shortId = rawId.length > 6 ? rawId.slice(-6).toUpperCase() : rawId.toUpperCase();
+    return `TKT-${shortId}`;
+  };
+
   return (
     <div className="p-6">
       {/* Header */}
@@ -363,7 +373,7 @@ const TicketManagementAdmin = () => {
             <div key={ticket.id} className="bg-white rounded-lg shadow p-6 border border-gray-200">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center space-x-3">
-                  <span className="text-lg font-bold text-gray-900">#{ticket.id?.substring(0, 8) || ticket.id}</span>
+                  <span className="text-lg font-bold text-gray-900">{formatTicketId(ticket.id)}</span>
                   <span className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(ticket.priority)}`}>
                     {ticket.priority}
                   </span>
@@ -666,7 +676,7 @@ const TicketManagementAdmin = () => {
               </div>
               
               <div className="mb-4">
-                <p className="text-sm text-gray-600">Ticket: #{selectedTicket.id?.substring(0, 8)}</p>
+                <p className="text-sm text-gray-600">Ticket: {formatTicketId(selectedTicket.id)}</p>
                 <p className="text-sm font-medium text-gray-900">{selectedTicket.description}</p>
               </div>
               
@@ -727,7 +737,7 @@ const TicketManagementAdmin = () => {
           <div className="relative bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-semibold text-gray-900">Ticket Details - #{selectedTicket.id?.substring(0, 8)}</h3>
+                <h3 className="text-xl font-semibold text-gray-900">Ticket Details - {formatTicketId(selectedTicket.id)}</h3>
                 <button
                   onClick={() => setShowTicketModal(false)}
                   className="text-gray-400 hover:text-gray-600"

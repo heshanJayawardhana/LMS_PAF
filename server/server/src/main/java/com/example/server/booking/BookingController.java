@@ -6,6 +6,8 @@ import com.example.server.auth.UserRole;
 import com.example.server.common.ApiResponse;
 import com.example.server.facility.Facility;
 import com.example.server.facility.FacilityService;
+import com.example.server.notification.NotificationService;
+import com.example.server.notification.dto.CreateNotificationRequest;
 import jakarta.validation.Valid;
 import java.util.HashMap;
 import java.util.List;
@@ -34,6 +36,7 @@ public class BookingController {
     private final BookingService bookingService;
     private final FacilityService facilityService;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
     
     @GetMapping
     public ApiResponse<List<Map<String, Object>>> getAllBookings(
@@ -97,6 +100,7 @@ public class BookingController {
                 .build();
             
             Booking createdBooking = bookingService.create(booking);
+            notifyAdminsAboutPendingBooking(createdBooking);
             Map<String, Object> response = convertToResponse(createdBooking);
             
             return new ApiResponse<>(true, response, "Booking created successfully");
@@ -147,6 +151,11 @@ public class BookingController {
     public ApiResponse<Map<String, Object>> approveBooking(@PathVariable String id) {
         try {
             Booking booking = bookingService.approve(id);
+            notifyBookingOwner(
+                    booking,
+                    "Your booking for " + resolveResourceName(booking) + " was approved.",
+                    "booking_approved"
+            );
             Map<String, Object> response = convertToResponse(booking);
             return new ApiResponse<>(true, response, "Booking approved successfully");
         } catch (RuntimeException e) {
@@ -161,6 +170,11 @@ public class BookingController {
     ) {
         try {
             Booking booking = bookingService.reject(id, request.getReason());
+            notifyBookingOwner(
+                    booking,
+                    "Your booking for " + resolveResourceName(booking) + " was rejected.",
+                    "booking_rejected"
+            );
             Map<String, Object> response = convertToResponse(booking);
             return new ApiResponse<>(true, response, "Booking rejected successfully");
         } catch (RuntimeException e) {
@@ -227,9 +241,14 @@ public class BookingController {
         response.put("purpose", booking.getPurpose());
         response.put("attendees", booking.getAttendees());
         response.put("status", booking.getStatus().name());
+        response.put("userId", booking.getUserId());
         response.put("requestedBy", booking.getRequestedBy());
         response.put("requestedAt", booking.getCreatedAt().toString().split("T")[0]);
         response.put("rejectionReason", booking.getRejectionReason());
+
+        userRepository.findById(booking.getUserId()).ifPresent(user -> {
+            response.put("requestedByEmail", user.getEmail());
+        });
         
         // Add resource details
         try {
@@ -250,5 +269,45 @@ public class BookingController {
         }
         
         return response;
+    }
+
+    private void notifyAdminsAboutPendingBooking(Booking booking) {
+        List<AppUser> admins = userRepository.findByRole(UserRole.ADMIN);
+        String resourceName = resolveResourceName(booking);
+
+        for (AppUser admin : admins) {
+            CreateNotificationRequest request = new CreateNotificationRequest();
+            request.setRecipientEmail(admin.getEmail());
+            request.setMessage("New booking request from " + booking.getRequestedBy() + " for " + resourceName + ".");
+            request.setType("info");
+            request.setRelatedType("BOOKING");
+            request.setRelatedId(booking.getId());
+            notificationService.createForRecipient(admin.getEmail(), request);
+        }
+    }
+
+    private void notifyBookingOwner(Booking booking, String message, String type) {
+        userRepository.findById(booking.getUserId()).ifPresent(user -> {
+            CreateNotificationRequest request = new CreateNotificationRequest();
+            request.setRecipientEmail(user.getEmail());
+            request.setMessage(message);
+            request.setType(type);
+            request.setRelatedType("BOOKING");
+            request.setRelatedId(booking.getId());
+            notificationService.createForRecipient(user.getEmail(), request);
+        });
+    }
+
+    private String resolveResourceName(Booking booking) {
+        try {
+            Facility facility = facilityService.getById(booking.getResourceId());
+            if (facility != null && facility.getName() != null && !facility.getName().isBlank()) {
+                return facility.getName();
+            }
+        } catch (Exception ignored) {
+            // Fall back to a generic label when facility lookup fails
+        }
+
+        return "the selected facility";
     }
 }

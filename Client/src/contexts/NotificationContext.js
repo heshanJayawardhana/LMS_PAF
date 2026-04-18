@@ -96,6 +96,7 @@ export const NotificationProvider = ({ children }) => {
 
     try {
       await notificationsAPI.markAsRead(notificationId);
+      toast.success('Notification marked as read');
     } catch (error) {
       console.error('Failed to mark notification as read:', error);
       setNotifications(previousNotifications);
@@ -113,6 +114,7 @@ export const NotificationProvider = ({ children }) => {
 
     try {
       await notificationsAPI.markAllAsRead();
+      toast.success('All notifications marked as read');
     } catch (error) {
       console.error('Failed to mark all notifications as read:', error);
       setNotifications(previousNotifications);
@@ -131,6 +133,7 @@ export const NotificationProvider = ({ children }) => {
 
     try {
       await notificationsAPI.delete(notificationId);
+      toast.success('Notification deleted');
     } catch (error) {
       console.error('Failed to delete notification:', error);
       setNotifications(previousNotifications);

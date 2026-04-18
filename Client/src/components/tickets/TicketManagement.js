@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../../contexts/AuthContext';
-import { useNotifications } from '../../contexts/NotificationContext';
-import { ticketsAPI } from '../../services/mockApi';
+import { ticketsAPI } from '../../services/api';
 import {
   TicketIcon,
   MagnifyingGlassIcon,
@@ -21,7 +20,6 @@ import {
 
 const TicketManagement = () => {
   const { user } = useAuth();
-  const { createNotification } = useNotifications();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterPriority, setFilterPriority] = useState('all');
@@ -56,100 +54,7 @@ const TicketManagement = () => {
     }
   };
 
-  // Mock data for fallback
-  const mockTickets = [
-    {
-      id: 101,
-      category: 'Equipment',
-      description: 'Projector not working in Conference Room A. The projector turns on but no image is displayed.',
-      priority: 'HIGH',
-      status: 'OPEN',
-      resource: 'Conference Room A',
-      location: 'Building 1, Floor 2',
-      requestedBy: 'Regular User',
-      email: 'user@campus.edu',
-      phone: '+1234567890',
-      assignedTo: null,
-      createdAt: '2026-04-05',
-      updatedAt: '2026-04-05',
-      attachments: ['projector_error.jpg'],
-      comments: [
-        {
-          id: 1,
-          user: 'Regular User',
-          message: 'This is urgent for tomorrow\'s presentation',
-          createdAt: '2026-04-05 10:30',
-        }
-      ],
-    },
-    {
-      id: 102,
-      category: 'Facility',
-      description: 'Air conditioning not working properly in Lab 301. Room temperature is too high.',
-      priority: 'MEDIUM',
-      status: 'IN_PROGRESS',
-      resource: 'Computer Lab 301',
-      location: 'Building 3, Floor 3',
-      requestedBy: 'Regular User',
-      email: 'user@campus.edu',
-      phone: '+1234567891',
-      assignedTo: 'Technician',
-      createdAt: '2026-04-04',
-      updatedAt: '2026-04-05',
-      attachments: [],
-      comments: [
-        {
-          id: 1,
-          user: 'Technician',
-          message: 'We have scheduled maintenance for tomorrow morning',
-          createdAt: '2026-04-05 09:15',
-        }
-      ],
-    },
-    {
-      id: 103,
-      category: 'Network',
-      description: 'WiFi connectivity issues in Lecture Hall B. Students unable to connect to campus network.',
-      priority: 'LOW',
-      status: 'RESOLVED',
-      resource: 'Lecture Hall B',
-      location: 'Building 2, Floor 1',
-      requestedBy: 'Regular User',
-      email: 'user@campus.edu',
-      phone: '+1234567892',
-      assignedTo: 'Technician',
-      createdAt: '2026-04-03',
-      updatedAt: '2026-04-04',
-      attachments: ['wifi_screenshot.png'],
-      comments: [
-        {
-          id: 1,
-          user: 'Technician',
-          message: 'Router has been restarted. Issue should be resolved.',
-          createdAt: '2026-04-04 14:20',
-        }
-      ],
-    },
-    {
-      id: 104,
-      category: 'Safety',
-      description: 'Broken window in Meeting Room C. Glass is cracked and poses safety risk.',
-      priority: 'HIGH',
-      status: 'OPEN',
-      resource: 'Meeting Room C',
-      location: 'Building 1, Floor 1',
-      requestedBy: 'Regular User',
-      email: 'user@campus.edu',
-      phone: '+1234567893',
-      assignedTo: null,
-      createdAt: '2026-04-05',
-      updatedAt: '2026-04-05',
-      attachments: ['broken_window.jpg', 'safety_concern.jpg'],
-      comments: [],
-    },
-  ];
-
-  const displayTickets = (tickets.length > 0 ? tickets : mockTickets).map((ticket) => ({
+  const displayTickets = tickets.map((ticket) => ({
     ...ticket,
     resource: ticket.resource || ticket.resourceName || 'Unknown resource',
     location: ticket.location || ticket.resourceLocation || 'Unknown location',
@@ -223,6 +128,16 @@ const TicketManagement = () => {
     'Physics Lab 201',
   ];
 
+  const formatTicketId = (ticketId) => {
+    if (!ticketId) {
+      return 'TKT-0000';
+    }
+
+    const rawId = String(ticketId).trim();
+    const shortId = rawId.length > 6 ? rawId.slice(-6).toUpperCase() : rawId.toUpperCase();
+    return `TKT-${shortId}`;
+  };
+
   const handleCreateTicket = async (data) => {
     try {
       const response = await ticketsAPI.create(data);
@@ -241,16 +156,6 @@ const TicketManagement = () => {
     try {
       const response = await ticketsAPI.updateStatus(ticketId, newStatus);
       if (response.success) {
-        const ticket = filteredTickets.find((item) => item.id === ticketId);
-        if (ticket?.requestedByEmail) {
-          await createNotification({
-            recipientEmail: ticket.requestedByEmail,
-            message: `Ticket #${ticketId} status changed to ${newStatus}.`,
-            type: newStatus === 'RESOLVED' ? 'ticket_resolved' : 'ticket_status_changed',
-            relatedType: 'TICKET',
-            relatedId: String(ticketId),
-          });
-        }
         loadTickets(); // Reload tickets
       }
     } catch (error) {
@@ -262,16 +167,6 @@ const TicketManagement = () => {
     try {
       const response = await ticketsAPI.assign(ticketId, assignee);
       if (response.success) {
-        const ticket = filteredTickets.find((item) => item.id === ticketId);
-        if (ticket?.requestedByEmail) {
-          await createNotification({
-            recipientEmail: ticket.requestedByEmail,
-            message: `Ticket #${ticketId} has been assigned to a technician.`,
-            type: 'ticket_assigned',
-            relatedType: 'TICKET',
-            relatedId: String(ticketId),
-          });
-        }
         loadTickets(); // Reload tickets
       }
     } catch (error) {
@@ -311,21 +206,6 @@ const TicketManagement = () => {
     try {
       const response = await ticketsAPI.addComment(selectedTicket.id, commentText.trim());
       if (response.success) {
-        const recipientEmail =
-          user?.email === selectedTicket.requestedByEmail
-            ? selectedTicket.assignedToEmail
-            : selectedTicket.requestedByEmail;
-
-        if (recipientEmail) {
-          await createNotification({
-            recipientEmail,
-            message: `New comment on ticket #${selectedTicket.id}.`,
-            type: 'ticket_comment',
-            relatedType: 'TICKET',
-            relatedId: String(selectedTicket.id),
-          });
-        }
-
         closeCommentModal();
         loadTickets();
       }
@@ -358,7 +238,7 @@ const TicketManagement = () => {
         key: 'assign',
         label: 'Assign Me',
         icon: UserIcon,
-        onClick: () => handleAssignTicket(ticket.id, 3),
+        onClick: () => handleAssignTicket(ticket.id, user?.id),
         className: 'border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100',
       });
     }
@@ -463,7 +343,7 @@ const TicketManagement = () => {
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-center space-x-3">
                 <div className="flex items-center space-x-2">
-                  <span className="text-lg font-semibold text-navy-900">#{ticket.id}</span>
+                  <span className="text-lg font-semibold text-navy-900">{formatTicketId(ticket.id)}</span>
                   <span className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(ticket.priority)}`}>
                     {getPriorityIcon(ticket.priority)}
                     <span className="ml-1">{ticket.priority}</span>
@@ -576,7 +456,7 @@ const TicketManagement = () => {
             <div className="mb-4 flex items-start justify-between">
               <div>
                 <h3 className="text-lg font-semibold text-navy-900">
-                  Add Comment to Ticket #{selectedTicket.id}
+                  Add Comment to Ticket {formatTicketId(selectedTicket.id)}
                 </h3>
                 <p className="mt-1 text-sm text-navy-600">
                   Share an update for {selectedTicket.resource} and notify the relevant user.

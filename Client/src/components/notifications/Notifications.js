@@ -23,6 +23,25 @@ const Notifications = () => {
   
   const [filter, setFilter] = useState('all');
 
+  const formatTicketId = (ticketId) => {
+    if (!ticketId) {
+      return 'TKT-0000';
+    }
+
+    const rawId = String(ticketId).trim();
+    const shortId = rawId.length > 6 ? rawId.slice(-6).toUpperCase() : rawId.toUpperCase();
+    return `TKT-${shortId}`;
+  };
+
+  const formatNotificationMessage = (notification) => {
+    if (notification?.relatedType !== 'TICKET' || !notification?.relatedId || !notification?.message) {
+      return notification?.message;
+    }
+
+    const friendlyId = formatTicketId(notification.relatedId);
+    return notification.message.replace(/Ticket\s*#?[A-Za-z0-9_-]+/g, `Ticket ${friendlyId}`);
+  };
+
   const filteredNotifications = notifications.filter(notification => {
     if (filter === 'all') return true;
     if (filter === 'unread') return !notification.isRead;
@@ -76,12 +95,20 @@ const Notifications = () => {
     }
   };
 
-  const handleMarkAsRead = (notificationId) => {
-    markAsRead(notificationId);
+  const handleMarkAsRead = async (event, notificationId) => {
+    event.preventDefault();
+    event.stopPropagation();
+    await markAsRead(notificationId);
   };
 
-  const handleDelete = (notificationId) => {
-    deleteNotification(notificationId);
+  const handleDelete = async (event, notificationId) => {
+    event.preventDefault();
+    event.stopPropagation();
+    await deleteNotification(notificationId);
+  };
+
+  const handleMarkAllAsRead = async () => {
+    await markAllAsRead();
   };
 
   return (
@@ -96,7 +123,8 @@ const Notifications = () => {
         </div>
         {unreadCount > 0 && (
           <button
-            onClick={markAllAsRead}
+            type="button"
+            onClick={handleMarkAllAsRead}
             className="btn-secondary flex items-center space-x-2"
           >
             <CheckCircleIcon className="h-5 w-5" />
@@ -195,7 +223,7 @@ const Notifications = () => {
           filteredNotifications.map((notification) => (
             <div
               key={notification.id}
-              className={`card p-4 border-l-4 transition-all duration-200 ${
+              className={`relative card p-4 border-l-4 transition-all duration-200 ${
                 notification.isRead 
                   ? 'bg-white border-navy-200' 
                   : `${getNotificationColor(notification.type)} border-navy-500`
@@ -214,7 +242,7 @@ const Notifications = () => {
                       <p className={`text-sm ${
                         notification.isRead ? 'text-navy-700' : 'text-navy-900 font-medium'
                       }`}>
-                        {notification.message}
+                        {formatNotificationMessage(notification)}
                       </p>
                       <p className="mt-1 text-xs text-navy-500">
                         {formatTime(notification.createdAt)}
@@ -222,10 +250,11 @@ const Notifications = () => {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center space-x-2 ml-4">
+                    <div className="relative z-10 flex items-center space-x-2 ml-4">
                       {!notification.isRead && (
                         <button
-                          onClick={() => handleMarkAsRead(notification.id)}
+                          type="button"
+                          onClick={(event) => handleMarkAsRead(event, notification.id)}
                           className="text-navy-400 hover:text-navy-600 transition-colors duration-200"
                           title="Mark as read"
                         >
@@ -233,7 +262,8 @@ const Notifications = () => {
                         </button>
                       )}
                       <button
-                        onClick={() => handleDelete(notification.id)}
+                        type="button"
+                        onClick={(event) => handleDelete(event, notification.id)}
                         className="text-navy-400 hover:text-red-600 transition-colors duration-200"
                         title="Delete notification"
                       >
@@ -246,7 +276,7 @@ const Notifications = () => {
 
               {/* Unread indicator */}
               {!notification.isRead && (
-                <div className="absolute left-0 top-0 bottom-0 w-1 bg-navy-500 rounded-l-lg"></div>
+                <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-1 bg-navy-500 rounded-l-lg"></div>
               )}
             </div>
           ))
