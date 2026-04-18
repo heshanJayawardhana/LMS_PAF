@@ -23,6 +23,8 @@ const BookingManagement = () => {
   const [bookings, setBookings] = useState([]);
   const [facilities, setFacilities] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [submittingCreate, setSubmittingCreate] = useState(false);
+  const [createError, setCreateError] = useState('');
   const { register, handleSubmit, formState: { errors }, reset } = useForm();
 
   useEffect(() => {
@@ -183,22 +185,27 @@ const BookingManagement = () => {
   const statuses = ['all', 'PENDING', 'APPROVED', 'REJECTED', 'CANCELLED', 'IN_PROGRESS', 'OPEN', 'RESOLVED'];
 
   const handleCreateBooking = async (data) => {
+    setSubmittingCreate(true);
+    setCreateError('');
     try {
-      // Add required fields for backend
-      const bookingData = {
-        ...data,
-        userId: '2', // Mock user ID
-        requestedBy: 'Regular User' // Mock requested by
-      };
-      
-      const response = await bookingsAPI.create(bookingData);
+      const response = await bookingsAPI.create(data);
       if (response.success) {
-        loadBookings(); // Reload bookings
+        await loadBookings();
         setShowCreateModal(false);
         reset();
+        return;
       }
+
+      setCreateError(response.message || 'Failed to create booking.');
     } catch (error) {
       console.error('Failed to create booking:', error);
+      setCreateError(
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        'Failed to create booking. Please check the form and try again.'
+      );
+    } finally {
+      setSubmittingCreate(false);
     }
   };
 
@@ -282,6 +289,7 @@ const BookingManagement = () => {
           <p className="text-navy-600">Manage facility bookings and reservations</p>
         </div>
         <button
+          type="button"
           onClick={() => setShowCreateModal(true)}
           className="btn-primary flex items-center space-x-2"
         >
@@ -453,6 +461,12 @@ const BookingManagement = () => {
               <h3 className="text-lg font-semibold text-navy-900 mb-4">Create New Booking</h3>
               
               <form onSubmit={handleSubmit(handleCreateBooking)} className="space-y-4">
+                {createError && (
+                  <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                    {createError}
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-sm font-medium text-navy-700 mb-1">
                     Resource
@@ -552,6 +566,7 @@ const BookingManagement = () => {
                     type="button"
                     onClick={() => {
                       setShowCreateModal(false);
+                      setCreateError('');
                       reset();
                     }}
                     className="btn-secondary"
@@ -560,9 +575,10 @@ const BookingManagement = () => {
                   </button>
                   <button
                     type="submit"
-                    className="btn-primary"
+                    disabled={submittingCreate}
+                    className="btn-primary disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    Create Booking
+                    {submittingCreate ? 'Creating...' : 'Create Booking'}
                   </button>
                 </div>
               </form>
