@@ -15,6 +15,7 @@ public class Ticket {
     private String status;
     private String resourceId;
     private String resourceName;
+    private String location;
     private String contactEmail;
     private String contactPhone;
     private List<String> attachments;
@@ -70,6 +71,9 @@ public class Ticket {
 
     public String getResourceName() { return resourceName; }
     public void setResourceName(String resourceName) { this.resourceName = resourceName; }
+
+    public String getLocation() { return location; }
+    public void setLocation(String location) { this.location = location; }
 
     public String getContactEmail() { return contactEmail; }
     public void setContactEmail(String contactEmail) { this.contactEmail = contactEmail; }
