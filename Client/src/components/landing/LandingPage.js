@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   BuildingOfficeIcon,
@@ -11,6 +11,22 @@ import {
 } from '@heroicons/react/24/outline';
 
 const LandingPage = () => {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  
+  const backgroundImages = [
+    'https://t3.ftcdn.net/jpg/08/23/48/92/360_F_823489262_onPGneSlusimWkc7yWWUZIBb271JyVs7.jpg',
+    'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQZtwodKRUhMrPaslgUM3qPM0_rB7RZJsR2Zw&s',
+    'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ_7YT7LjMUXHOxKTo85Q2YPErXtiedWdMqeQ&s'
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prevIndex) => (prevIndex + 1) % backgroundImages.length);
+    }, 2000); // Change image every 2 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
   const features = [
     {
       icon: BuildingOfficeIcon,
@@ -116,6 +132,13 @@ const LandingPage = () => {
 
       {/* Hero Section */}
       <div className="relative bg-gradient-to-br from-navy-700 to-navy-900 py-24 px-4 sm:px-6 lg:px-8">
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20 transition-opacity duration-1000"
+          style={{
+            backgroundImage: `url("${backgroundImages[currentImageIndex]}")`
+          }}
+        ></div>
+        <div className="relative z-10">
         <div className="max-w-7xl mx-auto">
           <div className="text-center">
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white">
@@ -142,11 +165,18 @@ const LandingPage = () => {
             </div>
           </div>
         </div>
+        </div>
       </div>
 
       {/* Stats Section */}
-      <div className="py-16 bg-navy-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="py-16 bg-navy-50 relative">
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-15"
+          style={{
+            backgroundImage: 'url("https://images.unsplash.com/photo-1519389950473-34ba1297f231?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80")'
+          }}
+        ></div>
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {stats.map((stat, index) => (
               <div key={index} className="text-center">
@@ -166,8 +196,14 @@ const LandingPage = () => {
       </div>
 
       {/* Features Section */}
-      <div className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="py-20 bg-white relative">
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-10"
+          style={{
+            backgroundImage: 'url("https://images.unsplash.com/photo-1434030216411-0b793f4b4173?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2069&q=80")'
+          }}
+        ></div>
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h2 className="text-3xl font-bold text-navy-900">
               Everything You Need for Campus Operations
@@ -194,8 +230,14 @@ const LandingPage = () => {
       </div>
 
       {/* Testimonials Section */}
-      <div className="py-20 bg-navy-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="py-20 bg-navy-50 relative">
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-10"
+          style={{
+            backgroundImage: 'url("https://images.unsplash.com/photo-1521791136064-7986c2920216?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2069&q=80")'
+          }}
+        ></div>
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h2 className="text-3xl font-bold text-navy-900">
               Trusted by Campus Communities
@@ -225,7 +267,14 @@ const LandingPage = () => {
       </div>
 
       {/* CTA Section */}
-      <div className="bg-gradient-to-r from-navy-700 to-navy-900 py-16">
+      <div className="bg-gradient-to-r from-navy-700 to-navy-900 py-16 relative">
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-15"
+          style={{
+            backgroundImage: 'url("https://images.unsplash.com/photo-1519389950473-34ba1297f231?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80")'
+          }}
+        ></div>
+        <div className="relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl font-bold text-white">
             Ready to Transform Your Campus Operations?
@@ -242,6 +291,7 @@ const LandingPage = () => {
               <ArrowRightIcon className="ml-2 h-5 w-5" />
             </Link>
           </div>
+        </div>
         </div>
       </div>
 

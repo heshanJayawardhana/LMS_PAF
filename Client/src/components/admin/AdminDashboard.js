@@ -9,6 +9,7 @@ import {
   ArrowTrendingDownIcon,
   CurrencyDollarIcon,
 } from '@heroicons/react/24/outline';
+import AdminBookingManagement from './AdminBookingManagement';
 
 const AdminDashboard = () => {
   // Mock data - replace with actual API calls
@@ -290,6 +291,9 @@ const AdminDashboard = () => {
           <p className="text-xs text-navy-500 mt-1">Uptime: 99.9%</p>
         </div>
       </div>
+
+      {/* Admin Booking Management */}
+      <AdminBookingManagement />
     </div>
   );
 };
