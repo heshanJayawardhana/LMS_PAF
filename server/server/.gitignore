@@ -31,3 +31,9 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Local run logs
+backend-run.log
+backend-run.err.log
+frontend-run.log
+frontend-run.err.log
