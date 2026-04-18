@@ -1,9 +1,10 @@
 package com.example.server.ticket;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.LocalDateTime;
 import java.util.List;
+
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = "tickets")
 public class Ticket {
@@ -15,6 +16,7 @@ public class Ticket {
     private String status;
     private String resourceId;
     private String resourceName;
+    private String location;
     private String contactEmail;
     private String contactPhone;
     private List<String> attachments;
@@ -70,6 +72,9 @@ public class Ticket {
 
     public String getResourceName() { return resourceName; }
     public void setResourceName(String resourceName) { this.resourceName = resourceName; }
+
+    public String getLocation() { return location; }
+    public void setLocation(String location) { this.location = location; }
 
     public String getContactEmail() { return contactEmail; }
     public void setContactEmail(String contactEmail) { this.contactEmail = contactEmail; }

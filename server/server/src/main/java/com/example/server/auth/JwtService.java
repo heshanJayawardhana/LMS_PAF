@@ -1,25 +1,36 @@
 package com.example.server.auth;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+
 import javax.crypto.SecretKey;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+
 @Service
 public class JwtService {
+    private static final Logger logger = LoggerFactory.getLogger(JwtService.class);
     private final SecretKey key;
     private final long expirationMs;
 
     public JwtService(
             @Value("${app.jwt.secret:}") String secret,
+            @Value("${spring.profiles.active:}") String activeProfile,
             @Value("${app.jwt.expiration-ms:86400000}") long expirationMs
     ) {
         if (secret == null || secret.isBlank()) {
-            throw new IllegalStateException("JWT_SECRET environment variable is required");
+            if (activeProfile != null && activeProfile.equalsIgnoreCase("prod")) {
+                throw new IllegalStateException("JWT_SECRET environment variable is required in production");
+            }
+            secret = "default-local-jwt-secret-please-change-me-to-a-secure-value-123456";
+            logger.warn("JWT secret is not configured; using a development fallback secret. Do not use this in production.");
         }
 
         if (secret.length() < 32) {
